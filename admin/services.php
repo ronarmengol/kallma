@@ -110,9 +110,26 @@ $services = getServices($conn);
             }
         }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); white-space: nowrap; }
         th { color: var(--primary-color); font-weight: 600; }
         .btn-small { padding: 0.5rem 1rem; font-size: 0.9rem; }
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            color: #94a3b8;
+        }
+        .icon-btn:hover {
+            background: rgba(16, 185, 129, 0.1);
+            transform: scale(1.1);
+        }
+        .icon-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
         .modal-content { background: var(--card-bg); margin: 5% auto; padding: 2rem; border-radius: 16px; max-width: 500px; }
     </style>
@@ -148,6 +165,7 @@ $services = getServices($conn);
         <?php endif; ?>
 
         <div class="glass-card">
+            <div style="overflow-x: auto;">
             <table>
                 <thead>
                     <tr>
@@ -163,18 +181,23 @@ $services = getServices($conn);
                             <td><?php echo htmlspecialchars($service['name']); ?></td>
                             <td>$<?php echo number_format($service['price'], 2); ?></td>
                             <td><?php echo $service['duration_minutes']; ?> mins</td>
-                            <td>
-                                <button onclick='openEditModal(<?php echo json_encode($service); ?>)' class="btn btn-outline btn-small">Edit</button>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this service?');">
+                            <td style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button onclick='openEditModal(<?php echo json_encode($service); ?>)' class="icon-btn" title="Edit">
+                                    ✎
+                                </button>
+                                <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this service?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
-                                    <button type="submit" class="btn btn-outline btn-small" style="border-color: #ef4444; color: #ef4444;">Delete</button>
+                                    <button type="submit" class="icon-btn delete" title="Delete">
+                                        🗑️
+                                    </button>
                                 </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
