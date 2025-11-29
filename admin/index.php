@@ -119,6 +119,7 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
         }
         th {
             color: var(--primary-color);
@@ -176,8 +177,13 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
             </div>
         </div>
 
+        <div style="margin: 2rem 0; text-align: right;">
+            <a href="users.php" class="btn btn-primary">Manage Users</a>
+        </div>
+
         <div class="glass-card" style="margin-top: 3rem;">
             <h2>Recent Bookings</h2>
+            <div style="overflow-x: auto;">
             <table>
                 <thead>
                     <tr>
@@ -202,6 +208,7 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </body>

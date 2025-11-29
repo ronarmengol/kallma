@@ -238,6 +238,8 @@ nav {
 .service-card {
     transition: transform 0.3s ease;
     overflow: hidden;
+    position: relative;
+    height: 500px;
 }
 
 .service-card:hover {

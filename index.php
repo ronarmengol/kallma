@@ -27,12 +27,15 @@ $services = getServices($conn);
                 <?php endif; ?>
                 <div class="service-info">
                     <h3><?php echo htmlspecialchars($service['name']); ?></h3>
-                    <p style="color: #94a3b8; margin-bottom: 1rem;"><?php echo htmlspecialchars($service['description']); ?></p>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="service-price">$<?php echo number_format($service['price'], 2); ?></span>
-                        <span style="color: #64748b; font-size: 0.9rem;"><?php echo $service['duration_minutes']; ?> mins</span>
+                    <p style="color: #94a3b8; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp:2;-webkit-box-orient: vertical; overflow: hidden;"><?php echo htmlspecialchars($service['description']); ?></p>
+                    <div style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width:100%; padding: 0px 35px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width:100%">
+
+                            <span class="service-price">K<?php echo number_format($service['price'], 2); ?></span>
+                            <span style="color: #64748b; font-size: 0.9rem;"><?php echo $service['duration_minutes']; ?> mins</span>
+                        </div>
                     </div>
-                    <a href="booking.php?service_id=<?php echo $service['id']; ?>" class="btn btn-outline" style="margin-top: 1rem; width: 100%; text-align: center;">Book Now</a>
+                    <a href="booking.php?service_id=<?php echo $service['id']; ?>" class="btn btn-outline" style="width: 90%; position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); text-align: center;">Book Now</a>
                 </div>
             </div>
         <?php endforeach; ?>
