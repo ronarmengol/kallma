@@ -4,23 +4,48 @@ require_once '../includes/functions.php';
 
 session_start();
 
-if (!isLoggedIn() || !isAdmin()) {
+if (!isLoggedIn() || (!isAdmin() && !isMasseuse())) {
     redirect('../login.php');
 }
 
+// Get masseuse ID if logged in as masseuse
+$logged_in_masseuse_id = null;
+if (isMasseuse()) {
+    $logged_in_masseuse_id = getMasseuseIdByUserId($conn, $_SESSION['user_id']);
+}
+
 // Get stats
-$total_bookings = $conn->query("SELECT COUNT(*) as count FROM bookings")->fetch_assoc()['count'];
-$total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
-$total_masseuses = $conn->query("SELECT COUNT(*) as count FROM masseuses")->fetch_assoc()['count'];
-$total_users = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'customer'")->fetch_assoc()['count'];
+if (isAdmin()) {
+    $total_bookings = $conn->query("SELECT COUNT(*) as count FROM bookings")->fetch_assoc()['count'];
+    $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
+    $total_masseuses = $conn->query("SELECT COUNT(*) as count FROM masseuses")->fetch_assoc()['count'];
+    $total_users = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'customer'")->fetch_assoc()['count'];
+} else {
+    // Masseuse sees only their own bookings
+    $total_bookings = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id")->fetch_assoc()['count'];
+    $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
+    $total_masseuses = 1; // Only themselves
+    $total_users = 0; // Masseuses don't need to see total users
+}
 
 // Recent bookings
-$recent_bookings_sql = "SELECT b.*, u.name as customer_name, s.name as service_name, m.name as masseuse_name 
-                        FROM bookings b 
-                        LEFT JOIN users u ON b.user_id = u.id 
-                        JOIN services s ON b.service_id = s.id 
-                        JOIN masseuses m ON b.masseuse_id = m.id 
-                        ORDER BY b.created_at DESC LIMIT 5";
+if (isAdmin()) {
+    $recent_bookings_sql = "SELECT b.*, u.name as customer_name, s.name as service_name, m.name as masseuse_name 
+                            FROM bookings b 
+                            LEFT JOIN users u ON b.user_id = u.id 
+                            JOIN services s ON b.service_id = s.id 
+                            JOIN masseuses m ON b.masseuse_id = m.id 
+                            ORDER BY b.created_at DESC LIMIT 5";
+} else {
+    // Masseuse sees only their own bookings
+    $recent_bookings_sql = "SELECT b.*, u.name as customer_name, s.name as service_name, m.name as masseuse_name 
+                            FROM bookings b 
+                            LEFT JOIN users u ON b.user_id = u.id 
+                            JOIN services s ON b.service_id = s.id 
+                            JOIN masseuses m ON b.masseuse_id = m.id 
+                            WHERE b.masseuse_id = $logged_in_masseuse_id
+                            ORDER BY b.created_at DESC LIMIT 5";
+}
 $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>

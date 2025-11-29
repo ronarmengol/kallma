@@ -101,6 +101,7 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC")->fetch_all
                         <th>ID</th>
                         <th>Name</th>
                         <th>Mobile</th>
+                        <th>Password</th>
                         <th>Role</th>
                         <th>Actions</th>
                     </tr>
@@ -111,6 +112,7 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC")->fetch_all
                             <td><?php echo str_pad($user['id'], 4, '0', STR_PAD_LEFT); ?></td>
                             <td><?php echo htmlspecialchars($user['name']); ?></td>
                             <td><?php echo htmlspecialchars($user['mobile']); ?></td>
+                            <td><code style="background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9em;"><?php echo htmlspecialchars($user['password']); ?></code></td>
                             <td>
                                 <span class="badge" style="background: <?php echo $user['role'] === 'admin' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)'; ?>; color: <?php echo $user['role'] === 'admin' ? '#8b5cf6' : '#3b82f6'; ?>;">
                                     <?php echo ucfirst($user['role']); ?>

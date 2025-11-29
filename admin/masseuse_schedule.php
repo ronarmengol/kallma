@@ -4,13 +4,32 @@ require_once '../includes/functions.php';
 
 session_start();
 
-if (!isLoggedIn() || !isAdmin()) {
+// Check if user is logged in
+if (!isLoggedIn()) {
     redirect('../login.php');
 }
 
-// Get masseuse ID from query parameter
-$masseuse_id = isset($_GET['masseuse_id']) ? (int)$_GET['masseuse_id'] : null;
+// Get masseuse ID from query parameter or from logged-in masseuse
+$masseuse_id = null;
 $masseuse_name = '';
+
+if (isAdmin()) {
+    // Admin can access any masseuse's schedule
+    $masseuse_id = isset($_GET['masseuse_id']) ? (int)$_GET['masseuse_id'] : null;
+    if (!$masseuse_id) {
+        // If no masseuse selected, redirect to masseuses page
+        redirect('masseuses.php');
+    }
+} elseif (isMasseuse()) {
+    // Masseuse can only access their own schedule
+    $masseuse_id = getMasseuseIdByUserId($conn, $_SESSION['user_id']);
+    if (!$masseuse_id) {
+        die('Error: Masseuse account not properly configured.');
+    }
+} else {
+    // Regular users don't have access
+    redirect('../login.php');
+}
 
 if ($masseuse_id) {
     $sql = "SELECT name FROM masseuses WHERE id = $masseuse_id";
@@ -18,9 +37,6 @@ if ($masseuse_id) {
     if ($result->num_rows > 0) {
         $masseuse_name = $result->fetch_assoc()['name'];
     }
-} else {
-    // If no masseuse selected, redirect to masseuses page
-    redirect('masseuses.php');
 }
 ?>
 <!DOCTYPE html>

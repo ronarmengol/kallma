@@ -15,30 +15,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         if ($_POST['action'] === 'add') {
             $name = sanitize($conn, $_POST['name']);
+            $mobile = sanitize($conn, $_POST['mobile']);
             $bio = sanitize($conn, $_POST['bio']);
             $specialties = sanitize($conn, $_POST['specialties']);
             $image_url = sanitize($conn, $_POST['image_url']);
+            $password = $_POST['password'];
+            $password_confirm = $_POST['password_confirm'];
             
-            $sql = "INSERT INTO masseuses (name, bio, specialties, image_url) VALUES ('$name', '$bio', '$specialties', '$image_url')";
-            if ($conn->query($sql)) {
-                $message = "Masseuse added successfully!";
+            // Validate passwords match
+            if ($password !== $password_confirm) {
+                $message = "Passwords do not match!";
+            } elseif (empty($password)) {
+                $message = "Password is required!";
+            } else {
+                // Check if mobile number already exists
+                $check_mobile = $conn->query("SELECT id FROM users WHERE mobile='$mobile'");
+                if ($check_mobile && $check_mobile->num_rows > 0) {
+                    $message = "Error: Mobile number '$mobile' is already registered!";
+                } else {
+                    // Create user account first
+                    $user_sql = "INSERT INTO users (name, mobile, password, role) VALUES ('$name', '$mobile', '$password', 'masseuse')";
+                    if ($conn->query($user_sql)) {
+                        $user_id = $conn->insert_id;
+                        
+                        // Create masseuse record
+                        $sql = "INSERT INTO masseuses (name, bio, specialties, image_url, user_id) VALUES ('$name', '$bio', '$specialties', '$image_url', $user_id)";
+                        if ($conn->query($sql)) {
+                            $message = "Masseuse added successfully!";
+                        } else {
+                            // Rollback user creation if masseuse creation fails
+                            $conn->query("DELETE FROM users WHERE id=$user_id");
+                            $message = "Error creating masseuse record.";
+                        }
+                    } else {
+                        $message = "Error creating user account: " . $conn->error;
+                    }
+                }
             }
         } elseif ($_POST['action'] === 'edit') {
             $id = (int)$_POST['id'];
             $name = sanitize($conn, $_POST['name']);
+            $mobile = sanitize($conn, $_POST['mobile']);
             $bio = sanitize($conn, $_POST['bio']);
             $specialties = sanitize($conn, $_POST['specialties']);
             $image_url = sanitize($conn, $_POST['image_url']);
             
+            // Update masseuse record
             $sql = "UPDATE masseuses SET name='$name', bio='$bio', specialties='$specialties', image_url='$image_url' WHERE id=$id";
             if ($conn->query($sql)) {
-                $message = "Masseuse updated successfully!";
+                // Get user_id for this masseuse
+                $user_result = $conn->query("SELECT user_id FROM masseuses WHERE id=$id");
+                if ($user_result && $user_result->num_rows > 0) {
+                    $user_id = $user_result->fetch_assoc()['user_id'];
+                    
+                    // If masseuse doesn't have a user account yet, create one
+                    if (empty($user_id)) {
+                        // Check if password is provided for new account
+                        if (!empty($_POST['password']) && $_POST['password'] === $_POST['password_confirm']) {
+                            // Check if mobile number already exists
+                            $check_mobile = $conn->query("SELECT id FROM users WHERE mobile='$mobile'");
+                            if ($check_mobile && $check_mobile->num_rows > 0) {
+                                $message = "Masseuse updated but mobile number '$mobile' is already registered!";
+                            } else {
+                                $password = $_POST['password'];
+                                $create_user_sql = "INSERT INTO users (name, mobile, password, role) VALUES ('$name', '$mobile', '$password', 'masseuse')";
+                                if ($conn->query($create_user_sql)) {
+                                    $user_id = $conn->insert_id;
+                                    // Link the user account to the masseuse
+                                    $conn->query("UPDATE masseuses SET user_id=$user_id WHERE id=$id");
+                                    $message = "Masseuse updated and user account created successfully!";
+                                } else {
+                                    $message = "Masseuse updated but failed to create user account: " . $conn->error;
+                                }
+                            }
+                        } else {
+                            $message = "Masseuse updated. Note: No user account exists. Add a password to create login access.";
+                        }
+                    } else {
+                        // Update existing user account
+                        $user_sql = "UPDATE users SET name='$name', mobile='$mobile' WHERE id=$user_id";
+                        $conn->query($user_sql);
+                        
+                        // Update password if provided
+                        if (!empty($_POST['password'])) {
+                            $password = $_POST['password'];
+                            $password_confirm = $_POST['password_confirm'];
+                            
+                            if ($password === $password_confirm) {
+                                $conn->query("UPDATE users SET password='$password' WHERE id=$user_id");
+                            } else {
+                                $message = "Masseuse updated but passwords did not match!";
+                            }
+                        }
+                        
+                        if (empty($message)) {
+                            $message = "Masseuse updated successfully!";
+                        }
+                    }
+                }
             }
         } elseif ($_POST['action'] === 'delete') {
             $id = (int)$_POST['id'];
-            $sql = "DELETE FROM masseuses WHERE id=$id";
-            if ($conn->query($sql)) {
-                $message = "Masseuse deleted successfully!";
+            
+            // Get user_id before deleting masseuse
+            $user_result = $conn->query("SELECT user_id FROM masseuses WHERE id=$id");
+            if ($user_result && $user_result->num_rows > 0) {
+                $user_id = $user_result->fetch_assoc()['user_id'];
+                
+                // Delete masseuse
+                $sql = "DELETE FROM masseuses WHERE id=$id";
+                if ($conn->query($sql)) {
+                    // Delete associated user account
+                    $conn->query("DELETE FROM users WHERE id=$user_id");
+                    $message = "Masseuse deleted successfully!";
+                }
             }
         }
     }
@@ -133,6 +223,10 @@ $masseuses = getMasseuses($conn);
                     <input type="text" name="name" id="masseuseName" class="form-control" required>
                 </div>
                 <div class="form-group">
+                    <label>Mobile</label>
+                    <input type="text" name="mobile" id="masseuseMobile" class="form-control" required>
+                </div>
+                <div class="form-group">
                     <label>Bio</label>
                     <textarea name="bio" id="masseuseBio" class="form-control" rows="3"></textarea>
                 </div>
@@ -143,6 +237,14 @@ $masseuses = getMasseuses($conn);
                 <div class="form-group">
                     <label>Image URL</label>
                     <input type="text" name="image_url" id="masseuseImage" class="form-control">
+                </div>
+                <div class="form-group" id="passwordGroup">
+                    <label>Password <span id="passwordOptional" style="color: #94a3b8; font-size: 0.85em;">(leave blank to keep current)</span></label>
+                    <input type="password" name="password" id="masseusePassword" class="form-control">
+                </div>
+                <div class="form-group" id="passwordConfirmGroup">
+                    <label>Confirm Password</label>
+                    <input type="password" name="password_confirm" id="masseusePasswordConfirm" class="form-control">
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">Save</button>
@@ -159,6 +261,9 @@ $masseuses = getMasseuses($conn);
             document.getElementById('modalTitle').textContent = 'Add Masseuse';
             document.getElementById('formAction').value = 'add';
             document.getElementById('masseuseForm').reset();
+            document.getElementById('passwordOptional').style.display = 'none';
+            document.getElementById('masseusePassword').required = true;
+            document.getElementById('masseusePasswordConfirm').required = true;
             document.getElementById('masseuseModal').style.display = 'block';
         }
 
@@ -167,9 +272,15 @@ $masseuses = getMasseuses($conn);
             document.getElementById('formAction').value = 'edit';
             document.getElementById('masseuseId').value = masseuse.id;
             document.getElementById('masseuseName').value = masseuse.name;
+            document.getElementById('masseuseMobile').value = masseuse.mobile || '';
             document.getElementById('masseuseBio').value = masseuse.bio;
             document.getElementById('masseuseSpecialties').value = masseuse.specialties;
             document.getElementById('masseuseImage').value = masseuse.image_url || '';
+            document.getElementById('masseusePassword').value = '';
+            document.getElementById('masseusePasswordConfirm').value = '';
+            document.getElementById('passwordOptional').style.display = 'inline';
+            document.getElementById('masseusePassword').required = false;
+            document.getElementById('masseusePasswordConfirm').required = false;
             document.getElementById('masseuseModal').style.display = 'block';
         }
 

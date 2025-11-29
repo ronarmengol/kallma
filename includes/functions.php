@@ -29,4 +29,17 @@ function getMasseuses($conn) {
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
 }
+
+function isMasseuse() {
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'masseuse';
+}
+
+function getMasseuseIdByUserId($conn, $user_id) {
+    $sql = "SELECT id FROM masseuses WHERE user_id = $user_id";
+    $result = $conn->query($sql);
+    if ($result && $result->num_rows > 0) {
+        return $result->fetch_assoc()['id'];
+    }
+    return null;
+}
 ?>
