@@ -103,165 +103,25 @@ $services = getServices($conn);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Services - Kallma Spa</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .admin-nav {
-            background: rgba(15, 23, 42, 0.95);
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--glass-border);
-        }
-        .admin-nav .nav-links {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-            list-style: none;
-        }
-        .menu-toggle { display: none; font-size: 1.5rem; background: none; border: none; color: white; cursor: pointer; }
-        
-        @media (max-width: 768px) {
-            .admin-nav .container > div {
-                position: relative;
-            }
-            
-            .admin-nav .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                width: 100vw;
-                margin-left: calc(-50vw + 50%);
-                background: #0f172a;
-                flex-direction: column;
-                padding: 1rem 0;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-                z-index: 1000;
-                gap: 0;
-            }
-            
-            .admin-nav .nav-links.active {
-                display: flex;
-            }
-            
-            .admin-nav .nav-links li {
-                width: 100%;
-                text-align: center;
-                padding: 0.75rem 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            }
-            
-            .admin-nav .nav-links li:last-child {
-                border-bottom: none;
-            }
-            
-            .menu-toggle {
-                display: block;
-            }
-        }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); white-space: nowrap; }
-        th { color: var(--primary-color); font-weight: 600; }
-        .btn-small { padding: 0.5rem 1rem; font-size: 0.9rem; }
-        .icon-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            transition: all 0.3s ease;
-            border-radius: 8px;
-            color: #94a3b8;
-        }
-        .icon-btn:hover {
-            background: rgba(16, 185, 129, 0.1);
-            transform: scale(1.1);
-        }
-        .icon-btn.delete:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto; }
-        .modal-content { 
-            background: var(--card-bg); 
-            margin: 2rem auto; 
-            padding: 2rem; 
-            border-radius: 16px; 
-            max-width: 500px; 
-            max-height: 90vh; 
-            overflow-y: auto;
-            position: relative;
-        }
-
-        /* Drop Zone CSS */
-        .drop-zone {
-            width: 100%;
-            height: 200px;
-            padding: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-family: inherit;
-            font-weight: 500;
-            font-size: 1rem;
-            cursor: pointer;
-            color: #94a3b8;
-            border: 2px dashed rgba(16, 185, 129, 0.3);
-            border-radius: 10px;
-            background-color: rgba(255, 255, 255, 0.02);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .drop-zone:hover, .drop-zone.drop-zone--over {
-            border-color: var(--primary-color);
-            background-color: rgba(16, 185, 129, 0.05);
-        }
-
-        .drop-zone__input {
-            display: none;
-        }
-
-        .drop-zone__thumb {
-            width: 100%;
-            height: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            background-color: #1e293b;
-            background-size: cover;
-            background-position: center;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .drop-zone__thumb::after {
-            content: attr(data-label);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 5px 0;
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.75);
-            font-size: 14px;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
     <nav class="admin-nav">
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <a href="index.php" class="logo">Kallma Admin</a>
-                <button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('active')">☰</button>
-                <ul class="nav-links">
-                    <li><a href="index.php">Dashboard</a></li>
-                    <li><a href="services.php">Services</a></li>
-                    <li><a href="masseuses.php">Masseuses</a></li>
-                    <li><a href="bookings.php">Bookings</a></li>
-                    <li><a href="../index.php">View Site</a></li>
-                    <li><a href="../logout.php" class="btn btn-outline" style="padding: 0.5rem 1rem;">Logout</a></li>
-                </ul>
+                <button class="menu-toggle" onclick="document.querySelector('.nav-content').classList.toggle('active')">☰</button>
+                
+                <div class="nav-content">
+                    <ul class="nav-links">
+                        <li><a href="index.php">Dashboard</a></li>
+                        <li><a href="services.php">Services</a></li>
+                        <li><a href="masseuses.php">Masseuses</a></li>
+                        <li><a href="bookings.php">Bookings</a></li>
+                        <li><a href="users.php">Users</a></li>
+                        <li><a href="../index.php">View Site</a></li>
+                    </ul>
+                    <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
+                </div>
             </div>
         </div>
     </nav>

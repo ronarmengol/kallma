@@ -102,92 +102,26 @@ function renderSortHeader($label, $column, $currentSort, $currentOrder) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Bookings - Kallma Spa</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        .admin-nav { background: rgba(15, 23, 42, 0.95); padding: 1rem 0; border-bottom: 1px solid var(--glass-border); }
-        .admin-nav .nav-links { gap: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border); white-space: nowrap; }
-        th { color: var(--primary-color); font-weight: 600; }
-        th a:hover { color: #fff; }
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .badge-pending { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .badge-confirmed { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .badge-cancelled { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        .badge-completed { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .badge-paid { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
-        .status-select { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 0.5rem; border-radius: 8px; }
-        .status-select option { background-color: #1e293b; color: #fff; }
 
-        .admin-nav .nav-links {
-            display: flex;
-            gap: 1.5rem;
-            align-items: center;
-            list-style: none;
-        }
-
-        .menu-toggle { display: none; font-size: 1.5rem; background: none; border: none; color: white; cursor: pointer; }
-        
-        @media (max-width: 768px) {
-            .admin-nav .container > div {
-                position: relative;
-            }
-            
-            .admin-nav .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                width: 100vw;
-                margin-left: calc(-50vw + 50%);
-                background: #0f172a;
-                flex-direction: column;
-                padding: 1rem 0;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-                z-index: 1000;
-                gap: 0;
-            }
-            
-            .admin-nav .nav-links.active {
-                display: flex;
-            }
-            
-            .admin-nav .nav-links li {
-                width: 100%;
-                text-align: center;
-                padding: 0.75rem 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            }
-            
-            .admin-nav .nav-links li:last-child {
-                border-bottom: none;
-            }
-            
-            .menu-toggle {
-                display: block;
-            }
-        }
-    </style>
 </head>
 <body>
     <nav class="admin-nav">
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <a href="index.php" class="logo">Kallma Admin</a>
-                <button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('active')">☰</button>
-                <ul class="nav-links">
-                    <li><a href="index.php">Dashboard</a></li>
-                    <li><a href="services.php">Services</a></li>
-                    <li><a href="masseuses.php">Masseuses</a></li>
-                    <li><a href="bookings.php">Bookings</a></li>
-                    <li><a href="../index.php">View Site</a></li>
-                    <li><a href="../logout.php" class="btn btn-outline" style="padding: 0.5rem 1rem;">Logout</a></li>
-                </ul>
+                <button class="menu-toggle" onclick="document.querySelector('.nav-content').classList.toggle('active')">☰</button>
+                
+                <div class="nav-content">
+                    <ul class="nav-links">
+                        <li><a href="index.php">Dashboard</a></li>
+                        <li><a href="services.php">Services</a></li>
+                        <li><a href="masseuses.php">Masseuses</a></li>
+                        <li><a href="bookings.php">Bookings</a></li>
+                        <li><a href="users.php">Users</a></li>
+                        <li><a href="../index.php">View Site</a></li>
+                    </ul>
+                    <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
+                </div>
             </div>
         </div>
     </nav>
