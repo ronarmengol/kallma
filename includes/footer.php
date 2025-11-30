@@ -16,8 +16,8 @@
                 </div>
                 <div class="footer-col">
                     <h4>Contact</h4>
-                    <p>123 Wellness Ave, Serenity City</p>
-                    <p>+1 (555) 123-4567</p>
+                    <p>Riverside, Kitwe, Zambia</p>
+                    <p>+260 96 5815679</p>
                     <p>hello@kallma.com</p>
                 </div>
             </div>

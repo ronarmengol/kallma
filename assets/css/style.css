@@ -714,6 +714,7 @@ footer {
     justify-content: space-between;
     flex-grow: 1;
     margin-left: 2rem;
+    gap: 2rem;
 }
 
 .menu-toggle {
