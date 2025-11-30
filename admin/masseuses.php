@@ -226,6 +226,128 @@ $masseuses = getMasseuses($conn);
                 </tbody>
             </table>
         </div>
+
+        <!-- Monthly Completed Bookings Calendar Overview -->
+        <?php
+        // Get current month and year or from query params
+        $current_month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('n');
+        $current_year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
+        
+        // Get completed bookings for the month
+        $first_day = "$current_year-" . str_pad($current_month, 2, '0', STR_PAD_LEFT) . "-01";
+        $last_day = date('Y-m-t', strtotime($first_day));
+        
+        $bookings_sql = "SELECT b.*, m.name as masseuse_name, s.name as service_name 
+                        FROM bookings b 
+                        JOIN masseuses m ON b.masseuse_id = m.id 
+                        JOIN services s ON b.service_id = s.id 
+                        WHERE b.status = 'completed' 
+                        AND b.booking_date BETWEEN '$first_day' AND '$last_day'
+                        ORDER BY b.booking_date, b.booking_time";
+        $bookings_result = $conn->query($bookings_sql);
+        
+        // Organize bookings by date
+        $bookings_by_date = [];
+        if ($bookings_result && $bookings_result->num_rows > 0) {
+            while ($booking = $bookings_result->fetch_assoc()) {
+                $date = $booking['booking_date'];
+                if (!isset($bookings_by_date[$date])) {
+                    $bookings_by_date[$date] = [];
+                }
+                $bookings_by_date[$date][] = $booking;
+            }
+        }
+        
+        // Calendar calculations
+        $days_in_month = (int)date('t', strtotime($first_day));
+        $first_day_of_week = (int)date('N', strtotime($first_day)); // 1 (Monday) to 7 (Sunday)
+        
+        // Navigation dates
+        $prev_month = $current_month - 1;
+        $prev_year = $current_year;
+        if ($prev_month < 1) {
+            $prev_month = 12;
+            $prev_year--;
+        }
+        
+        $next_month = $current_month + 1;
+        $next_year = $current_year;
+        if ($next_month > 12) {
+            $next_month = 1;
+            $next_year++;
+        }
+        ?>
+        
+        <div class="glass-card" style="margin-top: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="margin: 0;">Completed Bookings - <?php echo date('F Y', strtotime($first_day)); ?></h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>" class="btn btn-outline btn-small">← Previous</a>
+                    <a href="?month=<?php echo date('n'); ?>&year=<?php echo date('Y'); ?>" class="btn btn-outline btn-small">Today</a>
+                    <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="btn btn-outline btn-small">Next →</a>
+                </div>
+            </div>
+            
+            <div class="calendar-overview">
+                <div class="calendar-header-row">
+                    <div class="calendar-header-cell">Mon</div>
+                    <div class="calendar-header-cell">Tue</div>
+                    <div class="calendar-header-cell">Wed</div>
+                    <div class="calendar-header-cell">Thu</div>
+                    <div class="calendar-header-cell">Fri</div>
+                    <div class="calendar-header-cell">Sat</div>
+                    <div class="calendar-header-cell">Sun</div>
+                </div>
+                
+                <div class="calendar-grid-overview">
+                    <?php
+                    // Empty cells before first day
+                    for ($i = 1; $i < $first_day_of_week; $i++) {
+                        echo '<div class="calendar-cell-overview empty"></div>';
+                    }
+                    
+                    // Days of the month
+                    for ($day = 1; $day <= $days_in_month; $day++) {
+                        $date = sprintf('%04d-%02d-%02d', $current_year, $current_month, $day);
+                        $is_today = ($date === date('Y-m-d'));
+                        $has_bookings = isset($bookings_by_date[$date]);
+                        
+                        $cell_class = 'calendar-cell-overview';
+                        if ($is_today) $cell_class .= ' today';
+                        if ($has_bookings) $cell_class .= ' has-bookings';
+                        
+                        echo '<div class="' . $cell_class . '">';
+                        echo '<div class="calendar-day-number">' . $day . '</div>';
+                        
+                        if ($has_bookings) {
+                            echo '<div class="bookings-list">';
+                            foreach ($bookings_by_date[$date] as $booking) {
+                                $time = date('H:i', strtotime($booking['booking_time']));
+                                echo '<div class="booking-item" title="' . htmlspecialchars($booking['service_name']) . ' at ' . $time . '">';
+                                echo '<span class="booking-time">' . $time . '</span> ';
+                                echo '<span class="booking-masseuse">' . htmlspecialchars($booking['masseuse_name']) . '</span>';
+                                echo '</div>';
+                            }
+                            echo '</div>';
+                        }
+                        
+                        echo '</div>';
+                    }
+                    
+                    // Fill remaining cells
+                    $total_cells = $first_day_of_week + $days_in_month - 1;
+                    $remaining_cells = (7 - ($total_cells % 7)) % 7;
+                    for ($i = 0; $i < $remaining_cells; $i++) {
+                        echo '<div class="calendar-cell-overview empty"></div>';
+                    }
+                    ?>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                <strong>Total Completed Bookings:</strong> <?php echo count($bookings_by_date) > 0 ? array_sum(array_map('count', $bookings_by_date)) : 0; ?>
+            </div>
+        </div>
     </div>
 
     <!-- Add/Edit Modal -->
