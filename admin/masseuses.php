@@ -227,13 +227,20 @@ $masseuses = getMasseuses($conn);
             </table>
         </div>
 
-        <!-- Monthly Completed Bookings Calendar Overview -->
+        <!-- Monthly Bookings Calendar Overview -->
         <?php
         // Get current month and year or from query params
         $current_month = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('n');
         $current_year = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
+        $status_filter = isset($_GET['status']) ? $_GET['status'] : 'completed';
         
-        // Get completed bookings for the month
+        // Validate status filter
+        $allowed_statuses = ['completed', 'pending'];
+        if (!in_array($status_filter, $allowed_statuses)) {
+            $status_filter = 'completed';
+        }
+        
+        // Get bookings for the month based on status filter
         $first_day = "$current_year-" . str_pad($current_month, 2, '0', STR_PAD_LEFT) . "-01";
         $last_day = date('Y-m-t', strtotime($first_day));
         
@@ -241,7 +248,7 @@ $masseuses = getMasseuses($conn);
                         FROM bookings b 
                         JOIN masseuses m ON b.masseuse_id = m.id 
                         JOIN services s ON b.service_id = s.id 
-                        WHERE b.status = 'completed' 
+                        WHERE b.status = '$status_filter' 
                         AND b.booking_date BETWEEN '$first_day' AND '$last_day'
                         ORDER BY b.booking_date, b.booking_time";
         $bookings_result = $conn->query($bookings_sql);
@@ -276,15 +283,32 @@ $masseuses = getMasseuses($conn);
             $next_month = 1;
             $next_year++;
         }
+        
+        // Status display names
+        $status_names = [
+            'completed' => 'Completed',
+            'pending' => 'Pending'
+        ];
         ?>
         
         <div class="glass-card" style="margin-top: 3rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                <h2 style="margin: 0;">Completed Bookings - <?php echo date('F Y', strtotime($first_day)); ?></h2>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>" class="btn btn-outline btn-small">← Previous</a>
-                    <a href="?month=<?php echo date('n'); ?>&year=<?php echo date('Y'); ?>" class="btn btn-outline btn-small">Today</a>
-                    <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>" class="btn btn-outline btn-small">Next →</a>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 style="margin: 0;"><?php echo $status_names[$status_filter]; ?> Bookings - <?php echo date('F Y', strtotime($first_day)); ?></h2>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <!-- Status Filter Buttons -->
+                    <div style="display: flex; gap: 0.5rem; padding: 0.25rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+                        <a href="?month=<?php echo $current_month; ?>&year=<?php echo $current_year; ?>&status=completed" 
+                           class="btn btn-small <?php echo $status_filter === 'completed' ? 'btn-primary' : 'btn-outline'; ?>" 
+                           style="padding: 0.5rem 1rem;">Completed</a>
+                        <a href="?month=<?php echo $current_month; ?>&year=<?php echo $current_year; ?>&status=pending" 
+                           class="btn btn-small <?php echo $status_filter === 'pending' ? 'btn-primary' : 'btn-outline'; ?>" 
+                           style="padding: 0.5rem 1rem;">Pending</a>
+                    </div>
+                    
+                    <!-- Month Navigation -->
+                    <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>&status=<?php echo $status_filter; ?>" class="btn btn-outline btn-small">← Previous</a>
+                    <span style="color: #94a3b8; font-weight: 600; padding: 0 0.5rem;">Month</span>
+                    <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>&status=<?php echo $status_filter; ?>" class="btn btn-outline btn-small">Next →</a>
                 </div>
             </div>
             
@@ -314,7 +338,9 @@ $masseuses = getMasseuses($conn);
                         
                         $cell_class = 'calendar-cell-overview';
                         if ($is_today) $cell_class .= ' today';
-                        if ($has_bookings) $cell_class .= ' has-bookings';
+                        if ($has_bookings) {
+                            $cell_class .= ' has-bookings has-' . $status_filter;
+                        }
                         
                         echo '<div class="' . $cell_class . '">';
                         echo '<div class="calendar-day-number">' . $day . '</div>';
@@ -323,7 +349,7 @@ $masseuses = getMasseuses($conn);
                             echo '<div class="bookings-list">';
                             foreach ($bookings_by_date[$date] as $booking) {
                                 $time = date('H:i', strtotime($booking['booking_time']));
-                                echo '<div class="booking-item" title="' . htmlspecialchars($booking['service_name']) . ' at ' . $time . '">';
+                                echo '<div class="booking-item status-' . $status_filter . '" title="' . htmlspecialchars($booking['service_name']) . ' at ' . $time . '">';
                                 echo '<span class="booking-time">' . $time . '</span> ';
                                 echo '<span class="booking-masseuse">' . htmlspecialchars($booking['masseuse_name']) . '</span>';
                                 echo '</div>';

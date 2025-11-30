@@ -1002,6 +1002,7 @@ th a:hover {
     color: #94a3b8;
     font-size: 1.1rem;
 }
+
 /* Calendar Overview Styles */
 .calendar-overview {
     width: 100%;
@@ -1121,18 +1122,56 @@ th a:hover {
         min-height: 80px;
         padding: 0.25rem;
     }
-    
+
     .calendar-day-number {
         font-size: 0.9rem;
         margin-bottom: 0.25rem;
     }
-    
+
     .booking-item {
         font-size: 0.65rem;
         padding: 0.2rem 0.3rem;
     }
-    
+
     .bookings-list {
         max-height: 50px;
     }
+}
+
+/* Status-specific booking item styles */
+.booking-item.status-pending {
+    background: rgba(251, 191, 36, 0.2);
+    border-left-color: #fbbf24;
+}
+
+.booking-item.status-pending:hover {
+    background: rgba(251, 191, 36, 0.3);
+}
+
+.booking-item.status-pending .booking-time {
+    color: #fbbf24;
+}
+
+.booking-item.status-completed {
+    background: rgba(16, 185, 129, 0.2);
+    border-left-color: var(--primary-color);
+}
+
+.booking-item.status-completed:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.booking-item.status-completed .booking-time {
+    color: var(--primary-color);
+}
+
+/* Calendar cells with different status bookings */
+.calendar-cell-overview.has-pending {
+    background: rgba(251, 191, 36, 0.05);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.calendar-cell-overview.has-completed {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.3);
 }
