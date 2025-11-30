@@ -49,7 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = $conn->query("SELECT * FROM users ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+// Handle sorting
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'created_at';
+$order = isset($_GET['order']) ? $_GET['order'] : 'DESC';
+
+$allowed_sort = ['name', 'role', 'created_at'];
+if (!in_array($sort, $allowed_sort)) {
+    $sort = 'created_at';
+}
+$order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+
+$users = $conn->query("SELECT * FROM users ORDER BY $sort $order")->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,10 +117,28 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC")->fetch_all
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Name</th>
+                        <th>
+                            <a href="?sort=name&order=<?php echo $sort === 'name' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                                Name
+                                <?php if ($sort === 'name'): ?>
+                                    <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
+                                <?php else: ?>
+                                    <span style="color: #64748b">↕</span>
+                                <?php endif; ?>
+                            </a>
+                        </th>
                         <th>Mobile</th>
                         <th>Password</th>
-                        <th>Role</th>
+                        <th>
+                            <a href="?sort=role&order=<?php echo $sort === 'role' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                                Role
+                                <?php if ($sort === 'role'): ?>
+                                    <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
+                                <?php else: ?>
+                                    <span style="color: #64748b">↕</span>
+                                <?php endif; ?>
+                            </a>
+                        </th>
                         <th>Actions</th>
                     </tr>
                 </thead>

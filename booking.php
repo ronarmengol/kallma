@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="booking-container">
     <div class="booking-card">
-        <h1 class="booking-title">Effortless Booking</h1>
+        <h1 class="booking-title">Your Booking</h1>
         
         <?php if ($message): ?>
             <div class="booking-success">
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="">-- Select Service --</option>
                             <?php foreach ($services as $service): ?>
                                 <option value="<?php echo $service['id']; ?>" <?php echo ($selected_service_id == $service['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($service['name']); ?> ($<?php echo $service['price']; ?>)
+                                    <?php echo htmlspecialchars($service['name']); ?> (K<?php echo $service['price']; ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>

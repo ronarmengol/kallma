@@ -5,8 +5,29 @@ function sanitize($conn, $input) {
     return mysqli_real_escape_string($conn, htmlspecialchars(trim($input)));
 }
 
+function checkSessionTimeout() {
+    $timeout_duration = 300; // 5 minutes in seconds
+
+    if (isset($_SESSION['last_activity'])) {
+        $elapsed_time = time() - $_SESSION['last_activity'];
+        if ($elapsed_time > $timeout_duration) {
+            session_unset();
+            session_destroy();
+            return true;
+        }
+    }
+    $_SESSION['last_activity'] = time();
+    return false;
+}
+
 function isLoggedIn() {
-    return isset($_SESSION['user_id']);
+    if (isset($_SESSION['user_id'])) {
+        if (checkSessionTimeout()) {
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 function isAdmin() {

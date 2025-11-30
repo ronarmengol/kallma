@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['last_activity'] = time();
             
             if ($user['role'] === 'admin' || $user['role'] === 'masseuse') {
                 redirect('admin/index.php');

@@ -26,7 +26,8 @@ if (session_status() === PHP_SESSION_NONE) {
                 <ul class="nav-links">
                     <li><a href="index.php">Home</a></li>
                     <li><a href="index.php#services">Services</a></li>
-                    <?php if (isset($_SESSION['user_id'])): ?>
+                    <?php require_once __DIR__ . '/functions.php'; ?>
+                    <?php if (isLoggedIn()): ?>
                         <li><a href="booking.php">Book Now</a></li>
                         <?php if ($_SESSION['role'] === 'admin'): ?>
                             <li><a href="admin/index.php">Admin</a></li>
