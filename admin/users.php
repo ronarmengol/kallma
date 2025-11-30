@@ -21,9 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = (int)$_POST['id'];
             $name = sanitize($conn, $_POST['name']);
             $mobile = sanitize($conn, $_POST['mobile']);
-            $role = sanitize($conn, $_POST['role']);
+            $password = sanitize($conn, $_POST['password']);
             
-            $sql = "UPDATE users SET name='$name', mobile='$mobile', role='$role' WHERE id=$id";
+            // Check if role is provided (it might not be for masseuses)
+            if (isset($_POST['role']) && !empty($_POST['role'])) {
+                $role = sanitize($conn, $_POST['role']);
+                // Update user with password and role
+                $sql = "UPDATE users SET name='$name', mobile='$mobile', role='$role', password='$password' WHERE id=$id";
+            } else {
+                // Update user with password only (keep existing role)
+                $sql = "UPDATE users SET name='$name', mobile='$mobile', password='$password' WHERE id=$id";
+            }
+            
             if ($conn->query($sql)) {
                 $message = "User updated successfully!";
             }
@@ -36,14 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 $message = "You cannot delete yourself!";
-            }
-        } elseif ($_POST['action'] === 'change_password') {
-            $id = $_SESSION['user_id'];
-            $new_password = $_POST['new_password'];
-            // Using plain text as per previous instructions to remove hashing
-            $sql = "UPDATE users SET password='$new_password' WHERE id=$id";
-            if ($conn->query($sql)) {
-                $message = "Password updated successfully!";
             }
         }
     }
@@ -99,10 +100,7 @@ $users = $conn->query("SELECT * FROM users ORDER BY $sort $order")->fetch_all(MY
     <div class="container" style="padding: 3rem 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
             <h1>Manage Users</h1>
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="openPasswordModal()" class="btn btn-outline">Change My Password</button>
-                <a href="masseuses.php" class="btn btn-primary">Add Masseuse</a>
-            </div>
+            <a href="masseuses.php" class="btn btn-primary">Add Masseuse</a>
         </div>
 
         <?php if ($message): ?>
@@ -193,6 +191,10 @@ $users = $conn->query("SELECT * FROM users ORDER BY $sort $order")->fetch_all(MY
                     <input type="text" name="mobile" id="editUserMobile" class="form-control" required>
                 </div>
                 <div class="form-group">
+                    <label>Password</label>
+                    <input type="text" name="password" id="editUserPassword" class="form-control" required>
+                </div>
+                <div class="form-group">
                     <label>Role</label>
                     <select name="role" id="editUserRole" class="form-control">
                         <option value="customer">Customer</option>
@@ -207,36 +209,16 @@ $users = $conn->query("SELECT * FROM users ORDER BY $sort $order")->fetch_all(MY
         </div>
     </div>
 
-    <!-- Change Password Modal -->
-    <div id="passwordModal" class="modal">
-        <div class="modal-content glass-card">
-            <h2>Change Password</h2>
-            <form method="POST">
-                <input type="hidden" name="action" value="change_password">
-                
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" name="new_password" class="form-control" required>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Update Password</button>
-                    <button type="button" onclick="document.getElementById('passwordModal').style.display='none'" class="btn btn-outline" style="flex: 1;">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
 
     <script>
         function openEditUserModal(user) {
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editUserName').value = user.name;
             document.getElementById('editUserMobile').value = user.mobile;
+            document.getElementById('editUserPassword').value = user.password;
             document.getElementById('editUserRole').value = user.role;
             document.getElementById('editUserModal').style.display = 'block';
-        }
-
-        function openPasswordModal() {
-            document.getElementById('passwordModal').style.display = 'block';
         }
 
         window.onclick = function(event) {

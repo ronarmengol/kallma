@@ -2,6 +2,9 @@
 require_once 'db.php';
 
 function sanitize($conn, $input) {
+    if ($input === null) {
+        return '';
+    }
     return mysqli_real_escape_string($conn, htmlspecialchars(trim($input)));
 }
 
