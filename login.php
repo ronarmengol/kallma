@@ -11,10 +11,11 @@ if (isLoggedIn()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = sanitize($conn, $_POST['name']);
+    $login_input = sanitize($conn, $_POST['name']);
     $password = $_POST['password'];
 
-    $sql = "SELECT * FROM users WHERE name = '$name'";
+    // Check against name, mobile, or username
+    $sql = "SELECT * FROM users WHERE name = '$login_input' OR mobile = '$login_input' OR username = '$login_input'";
     $result = $conn->query($sql);
 
     if ($result->num_rows === 1) {
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
             
-            if ($user['role'] === 'admin') {
+            if ($user['role'] === 'admin' || $user['role'] === 'masseuse') {
                 redirect('admin/index.php');
             } else {
                 redirect('index.php');

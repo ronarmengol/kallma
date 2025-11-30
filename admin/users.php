@@ -4,8 +4,12 @@ require_once '../includes/functions.php';
 
 session_start();
 
-if (!isLoggedIn() || !isAdmin()) {
+if (!isLoggedIn()) {
     redirect('../login.php');
+}
+
+if (!isAdmin()) {
+    redirect('index.php');
 }
 
 $message = '';
@@ -66,10 +70,14 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC")->fetch_all
                 <div class="nav-content">
                     <ul class="nav-links">
                         <li><a href="index.php">Dashboard</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="services.php">Services</a></li>
-                        <li><a href="masseuses.php">Masseuses</a></li>
+                        <?php endif; ?>
+                        <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
                         <li><a href="bookings.php">Bookings</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="users.php">Users</a></li>
+                        <?php endif; ?>
                         <li><a href="../index.php">View Site</a></li>
                     </ul>
                     <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>

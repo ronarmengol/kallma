@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         if ($_POST['action'] === 'add') {
             $name = sanitize($conn, $_POST['name']);
+            $username = sanitize($conn, $_POST['username']);
             $mobile = sanitize($conn, $_POST['mobile']);
             $bio = sanitize($conn, $_POST['bio']);
             $specialties = sanitize($conn, $_POST['specialties']);
@@ -28,18 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (empty($password)) {
                 $message = "Password is required!";
             } else {
-                // Check if mobile number already exists
-                $check_mobile = $conn->query("SELECT id FROM users WHERE mobile='$mobile'");
-                if ($check_mobile && $check_mobile->num_rows > 0) {
-                    $message = "Error: Mobile number '$mobile' is already registered!";
+                // Check if mobile or username already exists
+                $check_sql = "SELECT id FROM users WHERE mobile='$mobile' OR username='$username'";
+                $check_result = $conn->query($check_sql);
+                if ($check_result && $check_result->num_rows > 0) {
+                    $message = "Error: Mobile number or username is already registered!";
                 } else {
                     // Create user account first
-                    $user_sql = "INSERT INTO users (name, mobile, password, role) VALUES ('$name', '$mobile', '$password', 'masseuse')";
+                    $user_sql = "INSERT INTO users (name, username, mobile, password, role) VALUES ('$name', '$username', '$mobile', '$password', 'masseuse')";
                     if ($conn->query($user_sql)) {
                         $user_id = $conn->insert_id;
                         
                         // Create masseuse record
-                        $sql = "INSERT INTO masseuses (name, bio, specialties, image_url, user_id) VALUES ('$name', '$bio', '$specialties', '$image_url', $user_id)";
+                        $sql = "INSERT INTO masseuses (name, mobile, bio, specialties, image_url, user_id) VALUES ('$name', '$mobile', '$bio', '$specialties', '$image_url', $user_id)";
                         if ($conn->query($sql)) {
                             $message = "Masseuse added successfully!";
                         } else {
@@ -55,13 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_POST['action'] === 'edit') {
             $id = (int)$_POST['id'];
             $name = sanitize($conn, $_POST['name']);
+            $username = sanitize($conn, $_POST['username']);
             $mobile = sanitize($conn, $_POST['mobile']);
             $bio = sanitize($conn, $_POST['bio']);
             $specialties = sanitize($conn, $_POST['specialties']);
             $image_url = sanitize($conn, $_POST['image_url']);
             
             // Update masseuse record
-            $sql = "UPDATE masseuses SET name='$name', bio='$bio', specialties='$specialties', image_url='$image_url' WHERE id=$id";
+            $sql = "UPDATE masseuses SET name='$name', mobile='$mobile', bio='$bio', specialties='$specialties', image_url='$image_url' WHERE id=$id";
             if ($conn->query($sql)) {
                 // Get user_id for this masseuse
                 $user_result = $conn->query("SELECT user_id FROM masseuses WHERE id=$id");
@@ -72,13 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (empty($user_id)) {
                         // Check if password is provided for new account
                         if (!empty($_POST['password']) && $_POST['password'] === $_POST['password_confirm']) {
-                            // Check if mobile number already exists
-                            $check_mobile = $conn->query("SELECT id FROM users WHERE mobile='$mobile'");
-                            if ($check_mobile && $check_mobile->num_rows > 0) {
-                                $message = "Masseuse updated but mobile number '$mobile' is already registered!";
+                            // Check if mobile or username already exists
+                            $check_sql = "SELECT id FROM users WHERE mobile='$mobile' OR username='$username'";
+                            $check_result = $conn->query($check_sql);
+                            if ($check_result && $check_result->num_rows > 0) {
+                                $message = "Masseuse updated but mobile number or username is already registered!";
                             } else {
                                 $password = $_POST['password'];
-                                $create_user_sql = "INSERT INTO users (name, mobile, password, role) VALUES ('$name', '$mobile', '$password', 'masseuse')";
+                                $create_user_sql = "INSERT INTO users (name, username, mobile, password, role) VALUES ('$name', '$username', '$mobile', '$password', 'masseuse')";
                                 if ($conn->query($create_user_sql)) {
                                     $user_id = $conn->insert_id;
                                     // Link the user account to the masseuse
@@ -92,24 +96,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $message = "Masseuse updated. Note: No user account exists. Add a password to create login access.";
                         }
                     } else {
-                        // Update existing user account
-                        $user_sql = "UPDATE users SET name='$name', mobile='$mobile' WHERE id=$user_id";
-                        $conn->query($user_sql);
+                        // Check for duplicate username/mobile (excluding current user)
+                        $check_sql = "SELECT id FROM users WHERE (mobile='$mobile' OR username='$username') AND id != $user_id";
+                        $check_result = $conn->query($check_sql);
                         
-                        // Update password if provided
-                        if (!empty($_POST['password'])) {
-                            $password = $_POST['password'];
-                            $password_confirm = $_POST['password_confirm'];
+                        if ($check_result && $check_result->num_rows > 0) {
+                             $message = "Masseuse updated but mobile/username change failed: Already taken!";
+                        } else {
+                            // Update existing user account
+                            $user_sql = "UPDATE users SET name='$name', username='$username', mobile='$mobile' WHERE id=$user_id";
+                            $conn->query($user_sql);
                             
-                            if ($password === $password_confirm) {
-                                $conn->query("UPDATE users SET password='$password' WHERE id=$user_id");
-                            } else {
-                                $message = "Masseuse updated but passwords did not match!";
+                            // Update password if provided
+                            if (!empty($_POST['password'])) {
+                                $password = $_POST['password'];
+                                $password_confirm = $_POST['password_confirm'];
+                                
+                                if ($password === $password_confirm) {
+                                    $conn->query("UPDATE users SET password='$password' WHERE id=$user_id");
+                                } else {
+                                    $message = "Masseuse updated but passwords did not match!";
+                                }
                             }
-                        }
-                        
-                        if (empty($message)) {
-                            $message = "Masseuse updated successfully!";
+                            
+                            if (empty($message)) {
+                                $message = "Masseuse updated successfully!";
+                            }
                         }
                     }
                 }
@@ -155,10 +167,14 @@ $masseuses = getMasseuses($conn);
                 <div class="nav-content">
                     <ul class="nav-links">
                         <li><a href="index.php">Dashboard</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="services.php">Services</a></li>
-                        <li><a href="masseuses.php">Masseuses</a></li>
+                        <?php endif; ?>
+                        <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
                         <li><a href="bookings.php">Bookings</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="users.php">Users</a></li>
+                        <?php endif; ?>
                         <li><a href="../index.php">View Site</a></li>
                     </ul>
                     <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
@@ -184,6 +200,7 @@ $masseuses = getMasseuses($conn);
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Username</th>
                         <th>Specialties</th>
                         <th>Actions</th>
                     </tr>
@@ -192,6 +209,7 @@ $masseuses = getMasseuses($conn);
                     <?php foreach ($masseuses as $masseuse): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($masseuse['name']); ?></td>
+                            <td><?php echo htmlspecialchars($masseuse['username'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($masseuse['specialties']); ?></td>
                             <td>
                                 <button onclick='openEditModal(<?php echo json_encode($masseuse); ?>)' class="btn btn-outline btn-small">Edit</button>
@@ -221,6 +239,10 @@ $masseuses = getMasseuses($conn);
                 <div class="form-group">
                     <label>Name</label>
                     <input type="text" name="name" id="masseuseName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" id="masseuseUsername" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label>Mobile</label>
@@ -272,6 +294,7 @@ $masseuses = getMasseuses($conn);
             document.getElementById('formAction').value = 'edit';
             document.getElementById('masseuseId').value = masseuse.id;
             document.getElementById('masseuseName').value = masseuse.name;
+            document.getElementById('masseuseUsername').value = masseuse.username || '';
             document.getElementById('masseuseMobile').value = masseuse.mobile || '';
             document.getElementById('masseuseBio').value = masseuse.bio;
             document.getElementById('masseuseSpecialties').value = masseuse.specialties;

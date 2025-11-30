@@ -25,7 +25,7 @@ function getServices($conn) {
 }
 
 function getMasseuses($conn) {
-    $sql = "SELECT * FROM masseuses ORDER BY name ASC";
+    $sql = "SELECT m.*, u.username FROM masseuses m LEFT JOIN users u ON m.user_id = u.id ORDER BY m.name ASC";
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
 }

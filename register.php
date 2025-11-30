@@ -12,6 +12,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = sanitize($conn, $_POST['name']);
+    $username = sanitize($conn, $_POST['username']);
     $mobile = sanitize($conn, $_POST['mobile']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
@@ -19,13 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
-        // Check if mobile exists
-        $check_sql = "SELECT id FROM users WHERE mobile = '$mobile'";
+        // Check if mobile or username exists
+        $check_sql = "SELECT id FROM users WHERE mobile = '$mobile' OR username = '$username'";
         if ($conn->query($check_sql)->num_rows > 0) {
-            $error = "Mobile number already registered.";
+            $error = "Mobile number or username already registered.";
         } else {
             // Development: Store plain text password (NO HASHING)
-            $sql = "INSERT INTO users (name, mobile, password) VALUES ('$name', '$mobile', '$password')";
+            $sql = "INSERT INTO users (name, username, mobile, password) VALUES ('$name', '$username', '$mobile', '$password')";
             
             if ($conn->query($sql)) {
                 $_SESSION['user_id'] = $conn->insert_id;
@@ -59,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" required>
             </div>
             <div class="form-group">
                 <label for="mobile">Mobile Number</label>

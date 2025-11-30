@@ -4,8 +4,14 @@ require_once '../includes/functions.php';
 
 session_start();
 
-if (!isLoggedIn() || !isAdmin()) {
+if (!isLoggedIn() || (!isAdmin() && !isMasseuse())) {
     redirect('../login.php');
+}
+
+// Get masseuse ID if logged in as masseuse
+$logged_in_masseuse_id = null;
+if (isMasseuse()) {
+    $logged_in_masseuse_id = getMasseuseIdByUserId($conn, $_SESSION['user_id']);
 }
 
 $message = '';
@@ -14,6 +20,14 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $id = (int)$_POST['booking_id'];
     $status = sanitize($conn, $_POST['status']);
+    
+    // Verify ownership if masseuse
+    if (isMasseuse()) {
+        $check_sql = "SELECT id FROM bookings WHERE id=$id AND masseuse_id=$logged_in_masseuse_id";
+        if ($conn->query($check_sql)->num_rows === 0) {
+            die("Unauthorized access");
+        }
+    }
     
     $sql = "UPDATE bookings SET status='$status' WHERE id=$id";
     if ($conn->query($sql)) {
@@ -38,7 +52,11 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 // Get total bookings for pagination
-$count_sql = "SELECT COUNT(*) as total FROM bookings";
+if (isMasseuse()) {
+    $count_sql = "SELECT COUNT(*) as total FROM bookings WHERE masseuse_id=$logged_in_masseuse_id";
+} else {
+    $count_sql = "SELECT COUNT(*) as total FROM bookings";
+}
 $total_bookings = $conn->query($count_sql)->fetch_assoc()['total'];
 $total_pages = ceil($total_bookings / $limit);
 
@@ -47,8 +65,13 @@ $bookings_sql = "SELECT b.*, u.name as customer_name, u.mobile as customer_mobil
                  FROM bookings b 
                  LEFT JOIN users u ON b.user_id = u.id 
                  JOIN services s ON b.service_id = s.id 
-                 JOIN masseuses m ON b.masseuse_id = m.id 
-                 ORDER BY ";
+                 JOIN masseuses m ON b.masseuse_id = m.id ";
+
+if (isMasseuse()) {
+    $bookings_sql .= "WHERE b.masseuse_id=$logged_in_masseuse_id ";
+}
+
+$bookings_sql .= "ORDER BY ";
 
 // Add table prefix for ambiguous columns or use alias for others
 if ($sort === 'booking_date') {
@@ -114,10 +137,14 @@ function renderSortHeader($label, $column, $currentSort, $currentOrder) {
                 <div class="nav-content">
                     <ul class="nav-links">
                         <li><a href="index.php">Dashboard</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="services.php">Services</a></li>
-                        <li><a href="masseuses.php">Masseuses</a></li>
+                        <?php endif; ?>
+                        <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
                         <li><a href="bookings.php">Bookings</a></li>
+                        <?php if (isAdmin()): ?>
                         <li><a href="users.php">Users</a></li>
+                        <?php endif; ?>
                         <li><a href="../index.php">View Site</a></li>
                     </ul>
                     <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
