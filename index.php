@@ -12,7 +12,37 @@ $services = getServices($conn);
   </div>
 </section>
 
-<!-- FAQ Section -->
+<!-- Services Section (Moved up) -->
+<section id="services" class="container">
+  <h2 class="section-title">Our Services</h2>
+  <div class="services-grid">
+    <?php foreach ($services as $service): ?>
+      <div class="glass-card service-card">
+        <?php if ($service['image_url']): ?>
+          <img src="<?php echo htmlspecialchars($service['image_url']); ?>" alt="<?php echo htmlspecialchars($service['name']); ?>" class="service-image">
+        <?php else: ?>
+          <div class="service-image" style="background: #334155; display: flex; align-items: center; justify-content: center;">
+            <span>No Image</span>
+          </div>
+        <?php endif; ?>
+        <div class="service-info">
+          <h3><?php echo htmlspecialchars($service['name']); ?></h3>
+          <p style="color: #94a3b8; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp:2;-webkit-box-orient: vertical; overflow: hidden;"><?php echo htmlspecialchars($service['description']); ?></p>
+          <div style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width:100%; padding: 0px 35px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width:100%">
+
+              <span class="service-price">K<?php echo number_format($service['price'], 2); ?></span>
+              <span style="color: #64748b; font-size: 0.9rem;"><?php echo $service['duration_minutes']; ?> mins</span>
+            </div>
+          </div>
+          <a href="booking.php?service_id=<?php echo $service['id']; ?>" class="btn btn-outline" style="width: 90%; position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); text-align: center;">Book Now</a>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+
+<!-- FAQ Section (Moved down) -->
 <section id="faq" class="container" style="margin-top: 3rem;">
   <h2 class="section-title">Frequently Asked Questions</h2>
 
@@ -79,35 +109,6 @@ $services = getServices($conn);
     </div>
   <?php endif; ?>
 
-</section>
-
-<section id="services" class="container">
-  <h2 class="section-title">Our Services</h2>
-  <div class="services-grid">
-    <?php foreach ($services as $service): ?>
-      <div class="glass-card service-card">
-        <?php if ($service['image_url']): ?>
-          <img src="<?php echo htmlspecialchars($service['image_url']); ?>" alt="<?php echo htmlspecialchars($service['name']); ?>" class="service-image">
-        <?php else: ?>
-          <div class="service-image" style="background: #334155; display: flex; align-items: center; justify-content: center;">
-            <span>No Image</span>
-          </div>
-        <?php endif; ?>
-        <div class="service-info">
-          <h3><?php echo htmlspecialchars($service['name']); ?></h3>
-          <p style="color: #94a3b8; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp:2;-webkit-box-orient: vertical; overflow: hidden;"><?php echo htmlspecialchars($service['description']); ?></p>
-          <div style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width:100%; padding: 0px 35px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; width:100%">
-
-              <span class="service-price">K<?php echo number_format($service['price'], 2); ?></span>
-              <span style="color: #64748b; font-size: 0.9rem;"><?php echo $service['duration_minutes']; ?> mins</span>
-            </div>
-          </div>
-          <a href="booking.php?service_id=<?php echo $service['id']; ?>" class="btn btn-outline" style="width: 90%; position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); text-align: center;">Book Now</a>
-        </div>
-      </div>
-    <?php endforeach; ?>
-  </div>
 </section>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -4,6 +4,10 @@ require_once '../includes/functions.php';
 
 session_start();
 
+if (function_exists('checkSessionTimeout') && checkSessionTimeout()) {
+    redirect('../login.php?timeout=1');
+}
+
 if (!isLoggedIn() || (!isAdmin() && !isMasseuse())) {
     redirect('../login.php');
 }
@@ -47,104 +51,64 @@ if (isAdmin()) {
                             ORDER BY b.created_at DESC LIMIT 5";
 }
 $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
+
+$pageTitle = 'Admin Dashboard - Kallma Spa';
+require_once 'includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Kallma Spa</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
+<h1>Dashboard</h1>
 
-</head>
-
-<body>
-    <nav class="admin-nav">
-        <div class="container">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <a href="index.php" class="logo">Kallma Admin</a>
-                <button class="menu-toggle" onclick="document.querySelector('.nav-content').classList.toggle('active')">☰</button>
-
-                <div class="nav-content">
-                    <ul class="nav-links">
-                        <li><a href="index.php">Dashboard</a></li>
-                        <?php if (isAdmin()): ?>
-                            <li><a href="services.php">Services</a></li>
-                            <li><a href="faqs.php">Edit FAQs</a></li>
-                        <?php endif; ?>
-                        <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
-                        <li><a href="bookings.php">Bookings</a></li>
-                        <?php if (isAdmin()): ?>
-                            <li><a href="users.php">Users</a></li>
-                        <?php endif; ?>
-                        <li><a href="../index.php">View Site</a></li>
-                    </ul>
-                    <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container" style="padding: 3rem 2rem;">
-        <h1>Dashboard</h1>
-
-        <div class="stats-grid">
-            <div class="glass-card stat-card">
-                <div class="stat-label">Total Bookings</div>
-                <div class="stat-number"><?php echo $total_bookings; ?></div>
-            </div>
-            <div class="glass-card stat-card">
-                <div class="stat-label">Services</div>
-                <div class="stat-number"><?php echo $total_services; ?></div>
-            </div>
-            <div class="glass-card stat-card">
-                <div class="stat-label">Masseuses</div>
-                <div class="stat-number"><?php echo $total_masseuses; ?></div>
-            </div>
-            <div class="glass-card stat-card">
-                <div class="stat-label">Customers</div>
-                <div class="stat-number"><?php echo $total_users; ?></div>
-            </div>
-        </div>
-
-        <div style="margin: 2rem 0; text-align: right;">
-            <a href="users.php" class="btn btn-primary">Manage Users</a>
-        </div>
-
-        <div class="glass-card" style="margin-top: 3rem;">
-            <h2>Recent Bookings</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Service</th>
-                            <th>Masseuse</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_bookings as $booking): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?></td>
-                                <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
-                                <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
-                                <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
-                                <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
-                                <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="stats-grid">
+    <div class="glass-card stat-card">
+        <div class="stat-label">Total Bookings</div>
+        <div class="stat-number"><?php echo $total_bookings; ?></div>
     </div>
-</body>
+    <div class="glass-card stat-card">
+        <div class="stat-label">Services</div>
+        <div class="stat-number"><?php echo $total_services; ?></div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-label">Masseuses</div>
+        <div class="stat-number"><?php echo $total_masseuses; ?></div>
+    </div>
+    <div class="glass-card stat-card">
+        <div class="stat-label">Customers</div>
+        <div class="stat-number"><?php echo $total_users; ?></div>
+    </div>
+</div>
 
-</html>
+<div style="margin: 2rem 0; text-align: right;">
+    <a href="users.php" class="btn btn-primary">Manage Users</a>
+</div>
+
+<div class="glass-card" style="margin-top: 3rem;">
+    <h2>Recent Bookings</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Service</th>
+                    <th>Masseuse</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($recent_bookings as $booking): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?></td>
+                        <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
+                        <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
+                        <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
+                        <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
+                        <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php require_once 'includes/footer.php'; ?>

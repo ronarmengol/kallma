@@ -45,7 +45,7 @@ if (function_exists('checkSessionTimeout') && checkSessionTimeout()) {
         if (timeoutId) clearTimeout(timeoutId);
         keepAlive();
         timeoutId = setTimeout(function() {
-          window.location = '/kallma/logout.php';
+          window.location = 'logout.php?timeout=1';
         }, TIMEOUT_MS);
       }
 

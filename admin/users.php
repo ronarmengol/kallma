@@ -61,171 +61,147 @@ if (!in_array($sort, $allowed_sort)) {
 $order = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
 
 $users = $conn->query("SELECT * FROM users ORDER BY $sort $order")->fetch_all(MYSQLI_ASSOC);
+$pageTitle = 'Manage Users - Kallma Spa';
+require_once 'includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - Kallma Spa</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
 
-</head>
-<body>
-    <nav class="admin-nav">
-        <div class="container">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <a href="index.php" class="logo">Kallma Admin</a>
-                <button class="menu-toggle" onclick="document.querySelector('.nav-content').classList.toggle('active')">☰</button>
-                
-                <div class="nav-content">
-                    <ul class="nav-links">
-                        <li><a href="index.php">Dashboard</a></li>
-                        <?php if (isAdmin()): ?>
-                        <li><a href="services.php">Services</a></li>
-                        <?php endif; ?>
-                        <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
-                        <li><a href="bookings.php">Bookings</a></li>
-                        <?php if (isAdmin()): ?>
-                        <li><a href="users.php">Users</a></li>
-                        <?php endif; ?>
-                        <li><a href="../index.php">View Site</a></li>
-                    </ul>
-                    <a href="../logout.php" class="btn btn-outline logout-btn" style="padding: 0.5rem 1rem;">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <h1>Manage Users</h1>
+    <a href="masseuses.php" class="btn btn-primary">Add Masseuse</a>
+</div>
 
-    <div class="container" style="padding: 3rem 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-            <h1>Manage Users</h1>
-            <a href="masseuses.php" class="btn btn-primary">Add Masseuse</a>
-        </div>
-
-        <?php if ($message): ?>
-            <div style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
-                <?php echo $message; ?>
-            </div>
-        <?php endif; ?>
-
-        <div class="glass-card">
-            <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>
-                            <a href="?sort=name&order=<?php echo $sort === 'name' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                                Name
-                                <?php if ($sort === 'name'): ?>
-                                    <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
-                                <?php else: ?>
-                                    <span style="color: #64748b">↕</span>
-                                <?php endif; ?>
-                            </a>
-                        </th>
-                        <th>Mobile</th>
-                        <th>Password</th>
-                        <th>
-                            <a href="?sort=role&order=<?php echo $sort === 'role' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                                Role
-                                <?php if ($sort === 'role'): ?>
-                                    <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
-                                <?php else: ?>
-                                    <span style="color: #64748b">↕</span>
-                                <?php endif; ?>
-                            </a>
-                        </th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($users as $user): ?>
-                        <tr>
-                            <td><?php echo str_pad($user['id'], 4, '0', STR_PAD_LEFT); ?></td>
-                            <td><?php echo htmlspecialchars($user['name']); ?></td>
-                            <td><?php echo htmlspecialchars($user['mobile']); ?></td>
-                            <td><code style="background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9em;"><?php echo htmlspecialchars($user['password']); ?></code></td>
-                            <td>
-                                <span class="badge" style="background: <?php echo $user['role'] === 'admin' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)'; ?>; color: <?php echo $user['role'] === 'admin' ? '#8b5cf6' : '#3b82f6'; ?>;">
-                                    <?php echo ucfirst($user['role']); ?>
-                                </span>
-                            </td>
-                            <td style="display: flex; gap: 0.5rem; align-items: center;">
-                                <button onclick='openEditUserModal(<?php echo json_encode($user); ?>)' class="icon-btn" title="Edit">
-                                    ✎
-                                </button>
-                                <?php if ($user['id'] !== $_SESSION['user_id']): ?>
-                                <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this user?');">
-                                    <input type="hidden" name="action" value="delete_user">
-                                    <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
-                                    <button type="submit" class="icon-btn delete" title="Delete">
-                                        🗑️
-                                    </button>
-                                </form>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            </div>
-        </div>
+<?php if ($message): ?>
+    <div style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+        <?php echo $message; ?>
     </div>
+<?php endif; ?>
 
-    <!-- Edit User Modal -->
-    <div id="editUserModal" class="modal">
-        <div class="modal-content glass-card">
-            <h2>Edit User</h2>
-            <form method="POST">
-                <input type="hidden" name="action" value="edit_user">
-                <input type="hidden" name="id" id="editUserId">
-                
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" name="name" id="editUserName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Mobile</label>
-                    <input type="text" name="mobile" id="editUserMobile" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="text" name="password" id="editUserPassword" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select name="role" id="editUserRole" class="form-control">
-                        <option value="customer">Customer</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save</button>
-                    <button type="button" onclick="document.getElementById('editUserModal').style.display='none'" class="btn btn-outline" style="flex: 1;">Cancel</button>
-                </div>
-            </form>
-        </div>
+<div class="glass-card">
+    <div style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>
+                    <a href="?sort=name&order=<?php echo $sort === 'name' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                        Name
+                        <?php if ($sort === 'name'): ?>
+                            <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
+                        <?php else: ?>
+                            <span style="color: #64748b">↕</span>
+                        <?php endif; ?>
+                    </a>
+                </th>
+                <th>Mobile</th>
+                <th>Password</th>
+                <th>
+                    <a href="?sort=role&order=<?php echo $sort === 'role' && $order === 'ASC' ? 'DESC' : 'ASC'; ?>" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                        Role
+                        <?php if ($sort === 'role'): ?>
+                            <span style="color: var(--primary-color)"><?php echo $order === 'ASC' ? '↑' : '↓'; ?></span>
+                        <?php else: ?>
+                            <span style="color: #64748b">↕</span>
+                        <?php endif; ?>
+                    </a>
+                </th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($users as $user): ?>
+                <tr>
+                    <td><?php echo str_pad($user['id'], 4, '0', STR_PAD_LEFT); ?></td>
+                    <td><?php echo htmlspecialchars($user['name']); ?></td>
+                    <td><?php echo htmlspecialchars($user['mobile']); ?></td>
+                    <td><code style="background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9em;"><?php echo htmlspecialchars($user['password']); ?></code></td>
+                    <td>
+                        <?php 
+                        $roleBg = 'rgba(59, 130, 246, 0.2)'; 
+                        $roleColor = '#3b82f6';
+                        
+                        if ($user['role'] === 'admin') {
+                            $roleBg = 'rgba(139, 92, 246, 0.2)'; 
+                            $roleColor = '#8b5cf6';
+                        } elseif ($user['role'] === 'masseuse') {
+                            $roleBg = 'rgba(236, 72, 153, 0.2)'; 
+                            $roleColor = '#ec4899';
+                        }
+                        ?>
+                        <span class="badge" style="background: <?php echo $roleBg; ?>; color: <?php echo $roleColor; ?>;">
+                            <?php echo ucfirst($user['role']); ?>
+                        </span>
+                    </td>
+                    <td style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button onclick='openEditUserModal(<?php echo json_encode($user); ?>)' class="icon-btn" title="Edit">
+                            ✎
+                        </button>
+                        <?php if ($user['id'] !== $_SESSION['user_id']): ?>
+                        <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this user?');">
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="id" value="<?php echo $user['id']; ?>">
+                            <button type="submit" class="icon-btn delete" title="Delete">
+                                🗑️
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
     </div>
+</div>
 
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content glass-card">
+        <h2>Edit User</h2>
+        <form method="POST">
+            <input type="hidden" name="action" value="edit_user">
+            <input type="hidden" name="id" id="editUserId">
+            
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" id="editUserName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Mobile</label>
+                <input type="text" name="mobile" id="editUserMobile" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="text" name="password" id="editUserPassword" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role" id="editUserRole" class="form-control">
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Save</button>
+                <button type="button" onclick="document.getElementById('editUserModal').style.display='none'" class="btn btn-outline" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
+<script>
+    function openEditUserModal(user) {
+        document.getElementById('editUserId').value = user.id;
+        document.getElementById('editUserName').value = user.name;
+        document.getElementById('editUserMobile').value = user.mobile;
+        document.getElementById('editUserPassword').value = user.password;
+        document.getElementById('editUserRole').value = user.role;
+        document.getElementById('editUserModal').style.display = 'block';
+    }
 
-    <script>
-        function openEditUserModal(user) {
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editUserName').value = user.name;
-            document.getElementById('editUserMobile').value = user.mobile;
-            document.getElementById('editUserPassword').value = user.password;
-            document.getElementById('editUserRole').value = user.role;
-            document.getElementById('editUserModal').style.display = 'block';
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
         }
+    }
+</script>
 
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
-        }
-    </script>
-</body>
-</html>
+<?php require_once 'includes/footer.php'; ?>
