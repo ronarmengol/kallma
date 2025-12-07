@@ -188,6 +188,59 @@ nav {
     }
 }
 
+/* Admin FAQ editor styles */
+.admin-faq-editor .glass-card {
+    max-width: 1100px;
+    margin: 0 auto 1rem auto;
+    padding: 1rem;
+}
+
+.admin-faq-editor label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.admin-faq-editor textarea {
+    width: 100%;
+    min-height: 240px;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+    resize: vertical;
+}
+
+.admin-faq-editor .btn {
+    margin-top: 0.5rem;
+}
+
+.admin-faq-editor .message {
+    max-width: 1100px;
+    margin: 0 auto 1rem auto;
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+
+.admin-faq-editor .message.success {
+    background: rgba(16, 185, 129, 0.12);
+    color: #bbf7d0;
+}
+
+.admin-faq-editor .message.error {
+    background: rgba(239, 68, 68, 0.08);
+    color: #fecaca;
+}
+
+@media (max-width: 768px) {
+    .admin-faq-editor textarea {
+        min-height: 180px;
+    }
+}
+
 /* Hero Section */
 .hero {
     height: 100vh;
@@ -534,9 +587,9 @@ footer {
 
 .calendar-day.disabled,
 .calendar-day.empty {
-    color: #334155;
+    color: rgba(255, 255, 255, 0.2);
     cursor: not-allowed;
-    opacity: 0.3;
+    pointer-events: none;
 }
 
 .calendar-day.today {
@@ -1174,4 +1227,121 @@ th a:hover {
 .calendar-cell-overview.has-completed {
     background: rgba(16, 185, 129, 0.05);
     border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* FAQ styles */
+.faq-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.faq-card details {
+    margin-bottom: 0.75rem;
+}
+
+.faq-card summary {
+    cursor: pointer;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    display: block;
+    font-weight: 600;
+}
+
+.faq-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-card p {
+    padding: 0.5rem 0 0.5rem 0.5rem;
+    color: #cbd5e1;
+}
+
+/* FAQ page styles */
+.faq-page {
+    padding: 2rem 0 4rem 0;
+}
+
+.faq-page .section-title {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.faq-page .faq-card {
+    max-width: 900px;
+    margin: 0 auto 1.25rem auto;
+    padding: 1rem 1.25rem;
+}
+
+.faq-page .faq-hero {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.faq-page details {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 0.5rem;
+}
+
+.faq-card summary {
+    cursor: pointer;
+    padding: 0.75rem 0.5rem;
+    background: transparent;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.faq-card summary:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.faq-card summary::after {
+    content: '+';
+    font-weight: 700;
+    color: var(--primary-color);
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 18px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+details[open] summary::after {
+    content: '\2212';
+    /* minus sign */
+    transform: rotate(0deg);
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.faq-card p {
+    padding-left: 0.5rem;
+    color: #cbd5e1;
+}
+
+/* Code tags inside FAQ */
+.faq-card code {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    color: #e6eef8;
+}
+
+@media (max-width: 768px) {
+    .faq-card summary {
+        font-size: 0.95rem;
+        gap: .5rem;
+    }
+
+    .faq-page {
+        padding: 1rem 0 2rem 0;
+    }
 }

@@ -50,6 +50,7 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,23 +61,25 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="../assets/css/style.css">
 
 </head>
+
 <body>
     <nav class="admin-nav">
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <a href="index.php" class="logo">Kallma Admin</a>
                 <button class="menu-toggle" onclick="document.querySelector('.nav-content').classList.toggle('active')">☰</button>
-                
+
                 <div class="nav-content">
                     <ul class="nav-links">
                         <li><a href="index.php">Dashboard</a></li>
                         <?php if (isAdmin()): ?>
-                        <li><a href="services.php">Services</a></li>
+                            <li><a href="services.php">Services</a></li>
+                            <li><a href="faqs.php">Edit FAQs</a></li>
                         <?php endif; ?>
                         <li><a href="<?php echo isMasseuse() ? 'masseuse_schedule.php' : 'masseuses.php'; ?>">Masseuses</a></li>
                         <li><a href="bookings.php">Bookings</a></li>
                         <?php if (isAdmin()): ?>
-                        <li><a href="users.php">Users</a></li>
+                            <li><a href="users.php">Users</a></li>
                         <?php endif; ?>
                         <li><a href="../index.php">View Site</a></li>
                     </ul>
@@ -88,7 +91,7 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
 
     <div class="container" style="padding: 3rem 2rem;">
         <h1>Dashboard</h1>
-        
+
         <div class="stats-grid">
             <div class="glass-card stat-card">
                 <div class="stat-label">Total Bookings</div>
@@ -115,32 +118,33 @@ $recent_bookings = $conn->query($recent_bookings_sql)->fetch_all(MYSQLI_ASSOC);
         <div class="glass-card" style="margin-top: 3rem;">
             <h2>Recent Bookings</h2>
             <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Customer</th>
-                        <th>Service</th>
-                        <th>Masseuse</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recent_bookings as $booking): ?>
+                <table>
+                    <thead>
                         <tr>
-                            <td><?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?></td>
-                            <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
-                            <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
-                            <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
-                            <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
-                            <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
+                            <th>Customer</th>
+                            <th>Service</th>
+                            <th>Masseuse</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_bookings as $booking): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?></td>
+                                <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
+                                <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
+                                <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
+                                <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </body>
+
 </html>

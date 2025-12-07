@@ -192,7 +192,11 @@ function renderCalendar() {
     // Get first day of month and number of days
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Normalize today to start of day for accurate comparison
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTimestamp = today.getTime();
     
     // Add empty cells for days before month starts
     for (let i = 0; i < firstDay; i++) {
@@ -208,15 +212,16 @@ function renderCalendar() {
         dayCell.textContent = day;
         
         const cellDate = new Date(year, month, day);
-        const dateStr = formatDate(cellDate);
+        // cellDate is already at 00:00:00 local time by default
         
         // Check if it's today
-        if (cellDate.toDateString() === today.toDateString()) {
+        // We compare timestamps to be safe
+        if (cellDate.getTime() === todayTimestamp) {
             dayCell.classList.add('today');
         }
         
         // Check if date is in the past
-        if (cellDate < today.setHours(0, 0, 0, 0)) {
+        if (cellDate.getTime() < todayTimestamp) {
             dayCell.classList.add('disabled');
         } else {
             // Add availability class if we have data
