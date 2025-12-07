@@ -9,6 +9,15 @@ if (function_exists('checkSessionTimeout') && checkSessionTimeout()) {
   header('Location: login.php?timeout=1');
   exit();
 }
+
+// Fetch user name if not in session to display in header
+if (isset($_SESSION['user_id']) && !isset($_SESSION['user_name']) && isset($conn)) {
+    $uid = (int)$_SESSION['user_id'];
+    $u_res = $conn->query("SELECT name FROM users WHERE id = $uid");
+    if ($u_res && $u_row = $u_res->fetch_assoc()) {
+        $_SESSION['user_name'] = $u_row['name'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -73,6 +82,7 @@ if (function_exists('checkSessionTimeout') && checkSessionTimeout()) {
           <!-- FAQ page removed -->
           <?php /* functions already required above */ ?>
           <?php if (isLoggedIn()): ?>
+            <li class="user-greeting">Hi, <?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : 'Guest'; ?></li>
             <li><a href="booking.php">Book Now</a></li>
             <?php if ($_SESSION['role'] === 'admin'): ?>
               <li><a href="admin/index.php">Admin</a></li>

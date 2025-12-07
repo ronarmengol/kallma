@@ -70,6 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!-- Time Slots Section -->
                     <div class="time-slots-container" id="timeSlotsContainer" style="display: none;">
                         <h3 class="time-slots-title"><span class="step-number">4</span> Available Time Slots</h3>
+                        <!-- Loader -->
+                        <div id="slotsLoader" class="loader-container">
+                            <div class="loader"></div>
+                        </div>
                         <div class="time-slots-grid" id="timeSlotsGrid">
                             <!-- Time slots will be populated here -->
                         </div>
@@ -289,9 +293,18 @@ async function loadTimeSlots() {
     
     if (!masseuseId || !date) return;
     
+    // Show container and loader
+    timeSlotsContainer.style.display = 'block';
+    timeSlotsGrid.innerHTML = '';
+    const loader = document.getElementById('slotsLoader');
+    if (loader) loader.style.display = 'flex';
+    
     try {
         const response = await fetch(`api/get_availability.php?masseuse_id=${masseuseId}&date=${date}`);
         const data = await response.json();
+        
+        // Hide loader
+        if (loader) loader.style.display = 'none';
         
         timeSlotsGrid.innerHTML = '';
         
@@ -308,6 +321,7 @@ async function loadTimeSlots() {
                 timeSlotsGrid.appendChild(timeSlot);
             });
             
+            // Ensure container is still visible (it might have been hidden on error before)
             timeSlotsContainer.style.display = 'block';
         } else {
             timeSlotsGrid.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 1rem;">No slots available</p>';
@@ -315,6 +329,10 @@ async function loadTimeSlots() {
         }
     } catch (error) {
         console.error('Error loading time slots:', error);
+        // Hide loader
+        if (loader) loader.style.display = 'none';
+        // Show error message
+        timeSlotsGrid.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 1rem;">Error loading slots. Please try again.</p>';
     }
 }
 
