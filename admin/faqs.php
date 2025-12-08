@@ -38,9 +38,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($_POST['action'] === 'delete') {
             $id = (int)$_POST['id'];
-            $sql = "DELETE FROM faqs WHERE id=$id";
-            if ($conn->query($sql)) {
-                $message = "FAQ deleted successfully!";
+            $password = $_POST['admin_password'] ?? '';
+            $user_id = $_SESSION['user_id'];
+            
+            // Verify Admin Password
+            $user_res = $conn->query("SELECT password FROM users WHERE id = $user_id");
+            if ($user_res && $row = $user_res->fetch_assoc()) {
+                if ($password === $row['password']) {
+                    // Password correct, proceed with delete
+                    $sql = "DELETE FROM faqs WHERE id=$id";
+                    if ($conn->query($sql)) {
+                        $message = "FAQ deleted successfully!";
+                    } else {
+                        $message = "Error deleting FAQ: " . $conn->error;
+                    }
+                } else {
+                    $message = "Incorrect password. Access denied.";
+                }
+            } else {
+                $message = "Authentication error.";
             }
         }
     }
@@ -99,13 +115,9 @@ require_once 'includes/header.php';
                                 <button onclick='openEditModal(<?php echo htmlspecialchars(json_encode($faq), ENT_QUOTES, 'UTF-8'); ?>)' class="icon-btn" title="Edit">
                                     ✎
                                 </button>
-                                <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this FAQ?');">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="<?php echo $faq['id']; ?>">
-                                    <button type="submit" class="icon-btn delete" title="Delete">
-                                        🗑️
-                                    </button>
-                                </form>
+                                <button type="button" class="icon-btn delete" title="Delete" onclick="openDeleteModal(<?php echo $faq['id']; ?>)">
+                                    🗑️
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -150,6 +162,31 @@ require_once 'includes/header.php';
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="modal">
+    <div class="modal-content glass-card" style="max-width: 400px; text-align: center;">
+        <h2 style="color: #ef4444; margin-bottom: 1rem;">Delete FAQ</h2>
+        <p style="color: #94a3b8; margin-bottom: 2rem;">
+            Are you sure you want to delete this FAQ? This action cannot be undone.
+        </p>
+        
+        <form method="POST">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="deleteFaqId">
+            
+            <div class="form-group" style="text-align: left;">
+                <label>Enter Admin Password to Confirm</label>
+                <input type="password" name="admin_password" class="form-control" placeholder="Password" required>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn" style="flex: 1; background: #ef4444; color: white; border: none;">Delete</button>
+                <button type="button" onclick="closeDeleteModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function openAddModal() {
         document.getElementById('modalTitle').textContent = 'Add FAQ';
@@ -172,10 +209,24 @@ require_once 'includes/header.php';
         document.getElementById('faqModal').style.display = 'none';
     }
 
+    // Delete Modal Functions
+    function openDeleteModal(id) {
+        document.getElementById('deleteFaqId').value = id;
+        document.getElementById('deleteConfirmModal').style.display = 'block';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteConfirmModal').style.display = 'none';
+    }
+
     window.onclick = function(event) {
         const modal = document.getElementById('faqModal');
+        const deleteModal = document.getElementById('deleteConfirmModal');
         if (event.target == modal) {
             closeModal();
+        }
+        if (event.target == deleteModal) {
+            closeDeleteModal();
         }
     }
 </script>
