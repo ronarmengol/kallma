@@ -161,7 +161,7 @@ if (isLoggedIn() && isset($_SESSION['user_id']) && $_SESSION['role'] === 'custom
 <?php endif; ?>
 
 <!-- Services Section (Moved up) -->
-<section id="services" class="container">
+<section id="services" class="container" style="padding-top: 3rem;">
   <h2 class="section-title">Our Services</h2>
   <div class="services-grid">
     <?php foreach ($services as $service): ?>

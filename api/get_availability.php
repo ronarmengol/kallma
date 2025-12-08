@@ -1,8 +1,14 @@
 <?php
+// Enable output buffering for faster response
+ob_start();
+
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
+// Add cache headers for better performance (cache for 30 seconds)
+header('Cache-Control: public, max-age=30');
+header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 30) . ' GMT');
 
 if (!isset($_GET['masseuse_id']) || !isset($_GET['date'])) {
     echo json_encode(['error' => 'Missing parameters']);
@@ -34,17 +40,17 @@ $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $bookings_result = $stmt->get_result();
 
-$booked_times = [];
+$booked_times_set = [];
 while ($b = $bookings_result->fetch_assoc()) {
-    $booked_times[] = $b['booking_time'];
+    $booked_times_set[$b['booking_time']] = true;
 }
 $stmt->close();
 
-// Convert to hash set for O(1) lookup instead of O(n) with in_array
-$booked_times_set = array_flip($booked_times);
-
 $slots = [];
 $current_server_time = time();
+
+// Pre-calculate date timestamp to avoid repeated strtotime calls
+$date_timestamp = strtotime($date);
 
 // First, check for daily availability (specific date overrides)
 $stmt_daily = $conn->prepare("SELECT start_time, end_time FROM daily_availability 
@@ -57,26 +63,21 @@ $result_daily = $stmt_daily->get_result();
 if ($result_daily->num_rows > 0) {
     // Use daily availability if set
     while ($row = $result_daily->fetch_assoc()) {
-        $start_time = strtotime($date . ' ' . $row['start_time']);
-        $end_time = strtotime($date . ' ' . $row['end_time']);
+        // Parse times once
+        list($start_h, $start_m) = explode(':', $row['start_time']);
+        list($end_h, $end_m) = explode(':', $row['end_time']);
+        
+        $start_time = $date_timestamp + ($start_h * 3600) + ($start_m * 60);
+        $end_time = $date_timestamp + ($end_h * 3600) + ($end_m * 60);
         
         // Generate slots for this time range
-        $current_time = $start_time;
-        while ($current_time < $end_time) {
+        for ($current_time = $start_time; $current_time < $end_time; $current_time += 3600) {
             $time_str = date('H:i', $current_time);
-            
-            if ($current_time < $current_server_time) {
-                $status = 'past';
-            } else {
-                $status = isset($booked_times_set[$time_str]) ? 'booked' : 'available';
-            }
             
             $slots[] = [
                 'time' => $time_str,
-                'status' => $status
+                'status' => $current_time < $current_server_time ? 'past' : (isset($booked_times_set[$time_str]) ? 'booked' : 'available')
             ];
-            
-            $current_time = strtotime('+1 hour', $current_time);
         }
     }
     $stmt_daily->close();
@@ -93,34 +94,31 @@ if ($result_daily->num_rows > 0) {
     if ($result->num_rows === 0) {
         $stmt_weekly->close();
         echo json_encode(['slots' => []]); // Not working today
+        ob_end_flush();
         exit;
     }
 
     $row = $result->fetch_assoc();
     $stmt_weekly->close();
     
-    $start_time = strtotime($date . ' ' . $row['start_time']);
-    $end_time = strtotime($date . ' ' . $row['end_time']);
+    // Parse times once
+    list($start_h, $start_m) = explode(':', $row['start_time']);
+    list($end_h, $end_m) = explode(':', $row['end_time']);
+    
+    $start_time = $date_timestamp + ($start_h * 3600) + ($start_m * 60);
+    $end_time = $date_timestamp + ($end_h * 3600) + ($end_m * 60);
 
-    // Generate slots
-    $current_time = $start_time;
-    while ($current_time < $end_time) {
+    // Generate slots using for loop instead of while for better performance
+    for ($current_time = $start_time; $current_time < $end_time; $current_time += 3600) {
         $time_str = date('H:i', $current_time);
-        
-        if ($current_time < $current_server_time) {
-            $status = 'past';
-        } else {
-            $status = isset($booked_times_set[$time_str]) ? 'booked' : 'available';
-        }
         
         $slots[] = [
             'time' => $time_str,
-            'status' => $status
+            'status' => $current_time < $current_server_time ? 'past' : (isset($booked_times_set[$time_str]) ? 'booked' : 'available')
         ];
-        
-        $current_time = strtotime('+1 hour', $current_time);
     }
 }
 
-echo json_encode(['slots' => $slots]);
+echo json_encode(['slots' => $slots], JSON_UNESCAPED_SLASHES);
+ob_end_flush();
 ?>

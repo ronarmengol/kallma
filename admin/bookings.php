@@ -211,7 +211,6 @@ require_once 'includes/header.php';
                                     <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
                                     <select name="status" class="status-select" onchange="this.form.submit()">
                                         <option value="pending" <?php echo $booking['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                        <option value="confirmed" <?php echo $booking['status'] === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
                                         <option value="completed" <?php echo $booking['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
                                         <option value="cancelled" <?php echo $booking['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                                     </select>
