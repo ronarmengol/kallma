@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             .login-left {
-                padding: 2rem 1rem;
+                display: none; /* Hide illustration on mobile for faster loading */
             }
             
             .login-illustration {

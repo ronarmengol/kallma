@@ -164,6 +164,12 @@ require_once 'includes/header.php';
     </div>
 <?php endif; ?>
 
+<div style="margin-bottom: 1rem;">
+    <p style="color: #94a3b8; font-size: 0.95rem; margin: 0;">
+        <strong style="color: #e2e8f0;">Today:</strong> <?php echo date('l, F j, Y'); ?>
+    </p>
+</div>
+
 <div class="glass-card">
     <div style="overflow-x: auto;">
     <table>
