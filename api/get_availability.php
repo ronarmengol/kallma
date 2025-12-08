@@ -10,16 +10,49 @@ if (!isset($_GET['masseuse_id']) || !isset($_GET['date'])) {
 }
 
 $masseuse_id = (int)$_GET['masseuse_id'];
-$date = $_GET['date']; // Format: YYYY-MM-DD
+$date = $conn->real_escape_string($_GET['date']); // Format: YYYY-MM-DD
 $day_of_week = date('l', strtotime($date));
 
-// First, check for daily availability (specific date overrides)
-$sql_daily = "SELECT start_time, end_time FROM daily_availability 
-              WHERE masseuse_id = $masseuse_id AND date = '$date'
-              ORDER BY start_time";
-$result_daily = $conn->query($sql_daily);
+// Get existing bookings ONCE for this masseuse and date
+$sql_bookings = "SELECT TIME_FORMAT(booking_time, '%H:%i') as booking_time FROM bookings 
+                WHERE masseuse_id = ? 
+                AND booking_date = ? 
+                AND status != 'cancelled'";
+
+$params = [$masseuse_id, $date];
+$types = 'is';
+
+if (isset($_GET['exclude_booking_id'])) {
+    $exclude_id = (int)$_GET['exclude_booking_id'];
+    $sql_bookings .= " AND id != ?";
+    $params[] = $exclude_id;
+    $types .= 'i';
+}
+
+$stmt = $conn->prepare($sql_bookings);
+$stmt->bind_param($types, ...$params);
+$stmt->execute();
+$bookings_result = $stmt->get_result();
+
+$booked_times = [];
+while ($b = $bookings_result->fetch_assoc()) {
+    $booked_times[] = $b['booking_time'];
+}
+$stmt->close();
+
+// Convert to hash set for O(1) lookup instead of O(n) with in_array
+$booked_times_set = array_flip($booked_times);
 
 $slots = [];
+$current_server_time = time();
+
+// First, check for daily availability (specific date overrides)
+$stmt_daily = $conn->prepare("SELECT start_time, end_time FROM daily_availability 
+                               WHERE masseuse_id = ? AND date = ?
+                               ORDER BY start_time");
+$stmt_daily->bind_param('is', $masseuse_id, $date);
+$stmt_daily->execute();
+$result_daily = $stmt_daily->get_result();
 
 if ($result_daily->num_rows > 0) {
     // Use daily availability if set
@@ -27,35 +60,15 @@ if ($result_daily->num_rows > 0) {
         $start_time = strtotime($date . ' ' . $row['start_time']);
         $end_time = strtotime($date . ' ' . $row['end_time']);
         
-        // Get existing bookings
-        // Get existing bookings
-        $sql_bookings = "SELECT booking_time FROM bookings 
-                        WHERE masseuse_id = $masseuse_id 
-                        AND booking_date = '$date' 
-                        AND status != 'cancelled'";
-                        
-        if (isset($_GET['exclude_booking_id'])) {
-            $exclude_id = (int)$_GET['exclude_booking_id'];
-            $sql_bookings .= " AND id != $exclude_id";
-        }
-        
-        $bookings_result = $conn->query($sql_bookings);
-        
-        $booked_times = [];
-        while ($b = $bookings_result->fetch_assoc()) {
-            // Ensure format matches the loop generation (H:i)
-            $booked_times[] = date('H:i', strtotime($b['booking_time']));
-        }
-        
         // Generate slots for this time range
         $current_time = $start_time;
         while ($current_time < $end_time) {
             $time_str = date('H:i', $current_time);
             
-            if ($current_time < time()) {
+            if ($current_time < $current_server_time) {
                 $status = 'past';
             } else {
-                $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+                $status = isset($booked_times_set[$time_str]) ? 'booked' : 'available';
             }
             
             $slots[] = [
@@ -66,49 +79,38 @@ if ($result_daily->num_rows > 0) {
             $current_time = strtotime('+1 hour', $current_time);
         }
     }
+    $stmt_daily->close();
 } else {
+    $stmt_daily->close();
+    
     // Fall back to weekly pattern availability
-    $sql = "SELECT start_time, end_time FROM availability 
-            WHERE masseuse_id = $masseuse_id AND day_of_week = '$day_of_week'";
-    $result = $conn->query($sql);
+    $stmt_weekly = $conn->prepare("SELECT start_time, end_time FROM availability 
+                                    WHERE masseuse_id = ? AND day_of_week = ?");
+    $stmt_weekly->bind_param('is', $masseuse_id, $day_of_week);
+    $stmt_weekly->execute();
+    $result = $stmt_weekly->get_result();
 
     if ($result->num_rows === 0) {
+        $stmt_weekly->close();
         echo json_encode(['slots' => []]); // Not working today
         exit;
     }
 
     $row = $result->fetch_assoc();
+    $stmt_weekly->close();
+    
     $start_time = strtotime($date . ' ' . $row['start_time']);
     $end_time = strtotime($date . ' ' . $row['end_time']);
-
-    // Get existing bookings
-    $sql_bookings = "SELECT booking_time FROM bookings 
-                    WHERE masseuse_id = $masseuse_id 
-                    AND booking_date = '$date' 
-                    AND status != 'cancelled'";
-                    
-    if (isset($_GET['exclude_booking_id'])) {
-        $exclude_id = (int)$_GET['exclude_booking_id'];
-        $sql_bookings .= " AND id != $exclude_id";
-    }
-
-    $bookings_result = $conn->query($sql_bookings);
-
-    $booked_times = [];
-    while ($b = $bookings_result->fetch_assoc()) {
-        // Ensure format matches the loop generation (H:i)
-        $booked_times[] = date('H:i', strtotime($b['booking_time']));
-    }
 
     // Generate slots
     $current_time = $start_time;
     while ($current_time < $end_time) {
         $time_str = date('H:i', $current_time);
         
-        if ($current_time < time()) {
+        if ($current_time < $current_server_time) {
             $status = 'past';
         } else {
-            $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+            $status = isset($booked_times_set[$time_str]) ? 'booked' : 'available';
         }
         
         $slots[] = [
