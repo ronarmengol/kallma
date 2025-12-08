@@ -12,26 +12,93 @@ $masseuses = getMasseuses($conn);
 $selected_service_id = isset($_GET['service_id']) ? (int)$_GET['service_id'] : null;
 $message = '';
 
+// Edit Mode Logic
+$edit_id = isset($_GET['edit_id']) ? (int)$_GET['edit_id'] : null;
+$is_editing = false;
+$edit_data = null;
+
+if ($edit_id) {
+    // Fetch booking details
+    $stmt = $conn->prepare("SELECT * FROM bookings WHERE id = ?");
+    $stmt->bind_param("i", $edit_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $edit_data = $result->fetch_assoc();
+        
+        // Fetch customer name if editing
+        $customer_name_display = '';
+        if (isAdmin()) {
+            $customer_id = $edit_data['user_id'];
+            $cust_res = $conn->query("SELECT name FROM users WHERE id=$customer_id");
+            if ($cust_res && $cust_row = $cust_res->fetch_assoc()) {
+                $customer_name_display = ' for ' . htmlspecialchars($cust_row['name']);
+            }
+        }
+        
+        // Permission check: Admin or Booking Owner
+        if (isAdmin() || $edit_data['user_id'] == $_SESSION['user_id']) {
+            $is_editing = true;
+            $selected_service_id = $edit_data['service_id'];
+        } else {
+            // Unauthorized
+            redirect('index.php');
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $user_id = $_SESSION['user_id'];
     $service_id = (int)$_POST['service_id'];
     $masseuse_id = (int)$_POST['masseuse_id'];
-    $date = $_POST['date'];
-    $time = $_POST['time'];
+    $date = sanitize($conn, $_POST['date']);
+    $time = sanitize($conn, $_POST['time']);
 
-    $sql = "INSERT INTO bookings (user_id, service_id, masseuse_id, booking_date, booking_time) VALUES ($user_id, $service_id, $masseuse_id, '$date', '$time')";
-    
-    if ($conn->query($sql)) {
-        $message = "Booking confirmed successfully!";
+    if (isset($_POST['edit_booking_id'])) {
+        // Update existing booking
+        $update_id = (int)$_POST['edit_booking_id'];
+        
+        // Validation (ensure user still has permission)
+        $check_sql = isAdmin() ? "SELECT id FROM bookings WHERE id=$update_id" : "SELECT id FROM bookings WHERE id=$update_id AND user_id=" . $_SESSION['user_id'];
+        if ($conn->query($check_sql)->num_rows > 0) {
+            $sql = "UPDATE bookings SET service_id=$service_id, masseuse_id=$masseuse_id, booking_date='$date', booking_time='$time' WHERE id=$update_id";
+            if ($conn->query($sql)) {
+                $message = "Booking updated successfully!";
+                // Refresh data
+                $edit_data['service_id'] = $service_id;
+                $edit_data['masseuse_id'] = $masseuse_id;
+                $edit_data['booking_date'] = $date;
+                $edit_data['booking_time'] = $time;
+                
+                // Redirect back to admin if admin
+                if (isAdmin()) {
+                     // Adding a small delay or link could be nice, but redirect is requested "populate... in preparation". 
+                     // Actually user said "go back to booking page and populate...".
+                     // So we stay here.
+                }
+            } else {
+                $message = "Error updating booking: " . $conn->error;
+            }
+        } else {
+            $message = "Unauthorized update attempt.";
+        }
     } else {
-        $message = "Error: " . $conn->error;
+        // Create new booking
+        $user_id = $_SESSION['user_id'];
+        $sql = "INSERT INTO bookings (user_id, service_id, masseuse_id, booking_date, booking_time) VALUES ($user_id, $service_id, $masseuse_id, '$date', '$time')";
+        
+        if ($conn->query($sql)) {
+            $message = "Booking confirmed successfully!";
+        } else {
+            $message = "Error: " . $conn->error;
+        }
     }
 }
 ?>
 
 <div class="booking-container">
     <div class="booking-card">
-        <h1 class="booking-title">Your Booking</h1>
+        <h1 class="booking-title"><?php echo $is_editing ? 'Edit Booking #' . $edit_id . $customer_name_display : 'Your Booking'; ?></h1>
         
         <?php if ($message): ?>
             <div class="booking-success">
@@ -81,6 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <input type="hidden" name="date" id="selectedDate">
                     <input type="hidden" name="time" id="selectedTime">
+                    <?php if ($is_editing): ?>
+                        <input type="hidden" name="edit_booking_id" value="<?php echo $edit_id; ?>">
+                    <?php endif; ?>
                 </div>
 
                 <!-- Right Side: Calendar -->
@@ -90,7 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="calendar-widget">
                         <div class="calendar-header">
-                            <h3 class="calendar-title" id="calendarTitle">Calendar</h3>
+                            <div>
+                                <h3 class="calendar-title" id="calendarTitle">Calendar</h3>
+                                <div id="currentTimeDisplay" style="font-size: 0.85rem; color: #64748b; font-weight: normal; margin-top: 4px;"></div>
+                            </div>
                             <div class="calendar-nav">
                                 <button type="button" id="prevMonth">‹</button>
                                 <button type="button" id="nextMonth">›</button>
@@ -104,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="booking-actions">
-                <button type="button" class="btn-confirm" id="confirmBtn" disabled>Confirm Booking</button>
+                <button type="button" class="btn-confirm" id="confirmBtn" disabled><?php echo $is_editing ? 'Update Booking' : 'Confirm Booking'; ?></button>
                 <button type="button" class="btn-reset" id="resetBtn">Reset</button>
                 <button type="button" class="btn-cancel" onclick="window.location.href='index.php'">Cancel</button>
             </div>
@@ -260,6 +333,11 @@ function selectDate(date, dayCell) {
     dayCell.classList.add('selected');
     selectedDate = date;
     selectedDateInput.value = formatDate(date);
+    
+    // Reset time selection
+    selectedTime = null;
+    selectedTimeInput.value = '';
+    updateConfirmButton(); // Disable confirm button until new time picked
     
     // Load time slots for this date
     loadTimeSlots();
@@ -513,7 +591,177 @@ document.getElementById('resetBtn').addEventListener('click', function() {
 });
 
 // Initial render
+// Initial render
 renderCalendar();
+
+// Dynamic Time Display
+function updateCurrentTime() {
+    const now = new Date();
+    // Format: "Mon, Dec 8 - 14:30"
+    const options = { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false // Or true if preferred, but usually 24h is clearer for slots
+    };
+    const timeString = now.toLocaleTimeString('en-US', options).replace(',', ' -');
+    
+    // Just time for simpler display if preferred:
+    // const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const display = document.getElementById('currentTimeDisplay');
+    if (display) {
+        display.textContent = 'Current Time: ' + timeString.split(' - ')[1]; // Showing just time or full date? User said "current time".
+        // Let's do full date + time for clarity
+        display.textContent = '' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+}
+
+// Update immediately and then every second
+// Update immediately and then every second
+updateCurrentTime();
+setInterval(updateCurrentTime, 1000);
+
+// Pre-populate for Edit Mode
+<?php if ($is_editing && $edit_data): ?>
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('Initializing Edit Mode...');
+        
+        // 1. Set Masseuse
+        masseuseSelect.value = "<?php echo $edit_data['masseuse_id']; ?>";
+        
+        // 2. Set Date Context & Render Calendar
+        const editDateStr = "<?php echo $edit_data['booking_date']; ?>";
+        // Safe parsing: create date as local, avoiding UTC offset issues
+        const dateParts = editDateStr.split('-');
+        const safeYear = parseInt(dateParts[0]);
+        const safeMonth = parseInt(dateParts[1]) - 1; // 0-indexed
+        const safeDay = parseInt(dateParts[2]);
+        
+        const editDate = new Date(safeYear, safeMonth, safeDay);
+        // Update global currentDate so calendar renders correct month
+        currentDate = new Date(safeYear, safeMonth, 1);
+        
+        // Load availability for that masseuse/month
+        await loadMonthlyAvailability();
+        
+        // 3. Select the specific date
+        // We need to find the element in the now-rendered calendar
+        // Since loadMonthlyAvailability calls renderCalendar(), the DOM should be ready after the await
+        
+        // Find the day element matching our date
+        const days = document.querySelectorAll('.calendar-day');
+        let targetCell = null;
+        
+        days.forEach(day => {
+            // Check text content AND ensure it's not a filler day from diff month
+            // Our standard calendar impl: 'empty' class is for previous month fillers
+            // But we might have next month fillers? Logic usually appends them.
+            // Simple check: strict text match + not empty + not disabled (unless it's today/past logic)
+            // Note: past days have .disabled. Editing a past booking? We might need to allow selection visually.
+            // For now, let's assume valid future or present booking, or just force select.
+            
+            if (parseInt(day.textContent) === safeDay && !day.classList.contains('empty')) {
+                targetCell = day;
+            }
+        });
+        
+        if (targetCell) {
+            targetCell.classList.remove('disabled'); // Force enable just in case it's slight past
+            targetCell.click(); // Trigger standard selection logic (sets Input, Global Vars)
+            
+            // Wait a tiny bit for click handlers if they are async? No, selectDate is sync mostly, but calls loadTimeSlots (async)
+            // But we want to call our specialized Exclusion loader.
+            
+            // Let's manually set values to be safe
+            selectedDate = editDate;
+            selectedDateInput.value = editDateStr;
+            targetCell.classList.add('selected');
+            
+            // 4. Load Time Slots WITH EXCLUSION
+            // We override the click's standard load because we need exclusion
+            const excludeId = "<?php echo $edit_data['id']; ?>";
+            await loadTimeSlotsWithExclusion(excludeId);
+            
+            // 5. Select the specific time
+            const editTime = "<?php echo substr($edit_data['booking_time'], 0, 5); ?>"; // HH:MM
+            
+            // We need to find the slot matching exact time string
+            // Wait for DOM update from loadTimeSlotsWithExclusion
+            // Since we awaited it, DOM should be ready
+            
+            const slots = document.querySelectorAll('.time-slot');
+            let matchedSlot = false;
+            
+            slots.forEach(slot => {
+                if (slot.textContent.trim() === editTime) {
+                    slot.classList.remove('booked'); // Ensure it looks valid
+                    slot.classList.add('available'); // Force available styling
+                    slot.click();
+                    matchedSlot = true;
+                }
+            });
+            
+            if (!matchedSlot) {
+                console.warn('Could not find original time slot:', editTime);
+            }
+            
+            // Re-enable button
+            updateConfirmButton();
+        } else {
+             console.error('Target day cell not found in calendar');
+        }
+    });
+
+    // Modified load function to support exclusion
+    async function loadTimeSlotsWithExclusion(excludeId) {
+        const masseuseId = masseuseSelect.value;
+        const date = selectedDateInput.value;
+        
+        if (!masseuseId || !date) return;
+        
+        // Show container and loader
+        timeSlotsContainer.style.display = 'block';
+        timeSlotsGrid.innerHTML = '';
+        const loader = document.getElementById('slotsLoader');
+        if (loader) loader.style.display = 'flex';
+        
+        try {
+            const response = await fetch(`api/get_availability.php?masseuse_id=${masseuseId}&date=${date}&exclude_booking_id=${excludeId}`);
+            const data = await response.json();
+            
+            // Hide loader
+            if (loader) loader.style.display = 'none';
+            
+            timeSlotsGrid.innerHTML = '';
+            
+            if (data.slots && data.slots.length > 0) {
+                data.slots.forEach(slot => {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = `time-slot ${slot.status}`;
+                    timeSlot.textContent = slot.time;
+                    
+                    if (slot.status === 'available') {
+                        timeSlot.addEventListener('click', () => selectTimeSlot(slot.time, timeSlot));
+                    }
+                    
+                    timeSlotsGrid.appendChild(timeSlot);
+                });
+                
+                timeSlotsContainer.style.display = 'block';
+            } else {
+                timeSlotsGrid.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 1rem;">No slots available</p>';
+                timeSlotsContainer.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error loading time slots:', error);
+             if (loader) loader.style.display = 'none';
+        }
+    }
+<?php endif; ?>
+
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -20,13 +20,18 @@ if (isMasseuse()) {
 
 // Get stats
 if (isAdmin()) {
-    $total_bookings = $conn->query("SELECT COUNT(*) as count FROM bookings")->fetch_assoc()['count'];
+    // Pending bookings stats
+    $pending_today = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status = 'pending' AND booking_date = CURDATE()")->fetch_assoc()['count'];
+    $pending_week = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status = 'pending' AND YEARWEEK(booking_date, 1) = YEARWEEK(CURDATE(), 1)")->fetch_assoc()['count'];
+    
     $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
     $total_masseuses = $conn->query("SELECT COUNT(*) as count FROM masseuses")->fetch_assoc()['count'];
     $total_users = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'customer'")->fetch_assoc()['count'];
 } else {
     // Masseuse sees only their own bookings
-    $total_bookings = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id")->fetch_assoc()['count'];
+    $pending_today = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id AND status = 'pending' AND booking_date = CURDATE()")->fetch_assoc()['count'];
+    $pending_week = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id AND status = 'pending' AND YEARWEEK(booking_date, 1) = YEARWEEK(CURDATE(), 1)")->fetch_assoc()['count'];
+
     $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
     $total_masseuses = 1; // Only themselves
     $total_users = 0; // Masseuses don't need to see total users
@@ -60,8 +65,17 @@ require_once 'includes/header.php';
 
 <div class="stats-grid">
     <div class="glass-card stat-card">
-        <div class="stat-label">Total Bookings</div>
-        <div class="stat-number"><?php echo $total_bookings; ?></div>
+        <div class="stat-label" style="margin-bottom: 0.5rem;">Pending Bookings</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; height: 100%;">
+            <div>
+                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Today</div>
+                <div class="stat-number" style="color: #f59e0b; font-size: 2rem; line-height: 1;"><?php echo $pending_today; ?></div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">This Week</div>
+                <div class="stat-number" style="color: #fbbf24; font-size: 2rem; line-height: 1;"><?php echo $pending_week; ?></div>
+            </div>
+        </div>
     </div>
     <div class="glass-card stat-card">
         <div class="stat-label">Services</div>
@@ -90,8 +104,8 @@ require_once 'includes/header.php';
                     <th>Customer</th>
                     <th>Service</th>
                     <th>Masseuse</th>
-                    <th>Date</th>
-                    <th>Time</th>
+                    <th>Date & Time</th>
+                    <th>Booked On</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -101,8 +115,18 @@ require_once 'includes/header.php';
                         <td><?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?></td>
                         <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
                         <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
-                        <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
-                        <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
+                        <td>
+                            <?php echo date('M d, Y', strtotime($booking['booking_date'])); ?>
+                            <div style="font-size: 0.85em; color: #94a3b8; margin-top: 2px;">
+                                <?php echo date('g:i A', strtotime($booking['booking_time'])); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <?php echo date('M d, Y', strtotime($booking['created_at'])); ?>
+                            <div style="font-size: 0.85em; color: #94a3b8; margin-top: 2px;">
+                                <?php echo date('g:i A', strtotime($booking['created_at'])); ?>
+                            </div>
+                        </td>
                         <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
                     </tr>
                 <?php endforeach; ?>

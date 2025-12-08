@@ -20,6 +20,29 @@ if (isMasseuse()) {
 
 $message = '';
 
+// Get lists for edit modal
+$services_list = getServices($conn);
+$masseuses_list = getMasseuses($conn);
+
+// Handle booking update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_booking') {
+    $id = (int)$_POST['booking_id'];
+    $service_id = (int)$_POST['service_id'];
+    $masseuse_id = (int)$_POST['masseuse_id'];
+    $date = sanitize($conn, $_POST['date']);
+    $time = sanitize($conn, $_POST['time']);
+    
+    // Basic validation could be added here
+    
+    $sql = "UPDATE bookings SET service_id=$service_id, masseuse_id=$masseuse_id, booking_date='$date', booking_time='$time' WHERE id=$id";
+    
+    if ($conn->query($sql)) {
+        $message = "Booking updated successfully!";
+    } else {
+        $message = "Error updating booking: " . $conn->error;
+    }
+}
+
 // Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $id = (int)$_POST['booking_id'];
@@ -170,7 +193,7 @@ require_once 'includes/header.php';
                         <td><?php echo str_pad($booking['id'], 4, '0', STR_PAD_LEFT); ?></td>
                         <td>
                             <?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?><br>
-                            <small style="color: #64748b;"><?php echo $booking['customer_mobile'] ? 'Mobile: ' . htmlspecialchars($booking['customer_mobile']) : ''; ?></small>
+                            <small style="color: #64748b;"><?php echo $booking['customer_mobile'] ? htmlspecialchars(str_replace(' ', '', trim($booking['customer_mobile']))) : ''; ?></small>
                         </td>
                         <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
                         <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
@@ -179,16 +202,21 @@ require_once 'includes/header.php';
 
                         <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
                         <td>
-                            <form method="POST" style="display: inline;">
-                                <input type="hidden" name="action" value="update_status">
-                                <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
-                                <select name="status" class="status-select" onchange="this.form.submit()">
-                                    <option value="pending" <?php echo $booking['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                    <option value="confirmed" <?php echo $booking['status'] === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
-                                    <option value="completed" <?php echo $booking['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                                    <option value="cancelled" <?php echo $booking['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                                </select>
-                            </form>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <a href="../booking.php?edit_id=<?php echo $booking['id']; ?>" class="icon-btn" title="Edit">
+                                    ✎
+                                </a>
+                                <form method="POST" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="action" value="update_status">
+                                    <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                    <select name="status" class="status-select" onchange="this.form.submit()">
+                                        <option value="pending" <?php echo $booking['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                        <option value="confirmed" <?php echo $booking['status'] === 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
+                                        <option value="completed" <?php echo $booking['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                                        <option value="cancelled" <?php echo $booking['status'] === 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                                    </select>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

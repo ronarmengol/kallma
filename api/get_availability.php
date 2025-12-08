@@ -28,22 +28,35 @@ if ($result_daily->num_rows > 0) {
         $end_time = strtotime($date . ' ' . $row['end_time']);
         
         // Get existing bookings
+        // Get existing bookings
         $sql_bookings = "SELECT booking_time FROM bookings 
                         WHERE masseuse_id = $masseuse_id 
                         AND booking_date = '$date' 
                         AND status != 'cancelled'";
+                        
+        if (isset($_GET['exclude_booking_id'])) {
+            $exclude_id = (int)$_GET['exclude_booking_id'];
+            $sql_bookings .= " AND id != $exclude_id";
+        }
+        
         $bookings_result = $conn->query($sql_bookings);
         
         $booked_times = [];
         while ($b = $bookings_result->fetch_assoc()) {
-            $booked_times[] = $b['booking_time'];
+            // Ensure format matches the loop generation (H:i)
+            $booked_times[] = date('H:i', strtotime($b['booking_time']));
         }
         
         // Generate slots for this time range
         $current_time = $start_time;
         while ($current_time < $end_time) {
             $time_str = date('H:i', $current_time);
-            $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+            
+            if ($current_time < time()) {
+                $status = 'past';
+            } else {
+                $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+            }
             
             $slots[] = [
                 'time' => $time_str,
@@ -73,18 +86,30 @@ if ($result_daily->num_rows > 0) {
                     WHERE masseuse_id = $masseuse_id 
                     AND booking_date = '$date' 
                     AND status != 'cancelled'";
+                    
+    if (isset($_GET['exclude_booking_id'])) {
+        $exclude_id = (int)$_GET['exclude_booking_id'];
+        $sql_bookings .= " AND id != $exclude_id";
+    }
+
     $bookings_result = $conn->query($sql_bookings);
 
     $booked_times = [];
     while ($b = $bookings_result->fetch_assoc()) {
-        $booked_times[] = $b['booking_time'];
+        // Ensure format matches the loop generation (H:i)
+        $booked_times[] = date('H:i', strtotime($b['booking_time']));
     }
 
     // Generate slots
     $current_time = $start_time;
     while ($current_time < $end_time) {
         $time_str = date('H:i', $current_time);
-        $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+        
+        if ($current_time < time()) {
+            $status = 'past';
+        } else {
+            $status = in_array($time_str, $booked_times) ? 'booked' : 'available';
+        }
         
         $slots[] = [
             'time' => $time_str,

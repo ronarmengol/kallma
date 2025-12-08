@@ -76,23 +76,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($_POST['action'] === 'delete') {
             $id = (int)$_POST['id'];
+            $password = $_POST['admin_password'] ?? '';
+            $user_id = $_SESSION['user_id'];
             
-            // Get image url before deleting
-            $current_image_sql = "SELECT image_url FROM services WHERE id=$id";
-            $result = $conn->query($current_image_sql);
-            $current_image = $result->fetch_assoc()['image_url'] ?? '';
+            // Verify Admin Password
+            $user_res = $conn->query("SELECT password FROM users WHERE id = $user_id");
+            if ($user_res && $row = $user_res->fetch_assoc()) {
+                if ($password === $row['password']) {
+                    // Password correct, proceed with delete
+                    
+                    // Get image url before deleting
+                    $current_image_sql = "SELECT image_url FROM services WHERE id=$id";
+                    $result = $conn->query($current_image_sql);
+                    $current_image = $result->fetch_assoc()['image_url'] ?? '';
 
-            // Delete image file
-            if (!empty($current_image)) {
-                $old_image_path = '../' . $current_image;
-                if (file_exists($old_image_path)) {
-                    unlink($old_image_path);
+                    // Delete image file
+                    if (!empty($current_image)) {
+                        $old_image_path = '../' . $current_image;
+                        if (file_exists($old_image_path)) {
+                            unlink($old_image_path);
+                        }
+                    }
+
+                    $sql = "DELETE FROM services WHERE id=$id";
+                    try {
+                        if ($conn->query($sql)) {
+                            $message = "Service deleted successfully!";
+                        }
+                    } catch (mysqli_sql_exception $e) {
+                        if ($e->getCode() == 1451) {
+                            $message = "Cannot delete: This service has existing bookings.";
+                        } else {
+                            $message = "Error deleting service: " . $e->getMessage();
+                        }
+                    }
+                } else {
+                    $message = "Incorrect password. Access denied.";
                 }
-            }
-
-            $sql = "DELETE FROM services WHERE id=$id";
-            if ($conn->query($sql)) {
-                $message = "Service deleted successfully!";
+            } else {
+                $message = "Authentication error.";
             }
         }
     }
@@ -135,13 +157,9 @@ require_once 'includes/header.php';
                         <button onclick='openEditModal(<?php echo json_encode($service); ?>)' class="icon-btn" title="Edit">
                             ✎
                         </button>
-                        <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this service?');">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
-                            <button type="submit" class="icon-btn delete" title="Delete">
-                                🗑️
-                            </button>
-                        </form>
+                        <button type="button" class="icon-btn delete" title="Delete" onclick="openDeleteModal(<?php echo $service['id']; ?>)">
+                            🗑️
+                        </button>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -184,6 +202,31 @@ require_once 'includes/header.php';
             <div style="display: flex; gap: 1rem;">
                 <button type="submit" class="btn btn-primary" style="flex: 1;">Save</button>
                 <button type="button" onclick="closeModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="modal">
+    <div class="modal-content glass-card" style="max-width: 400px; text-align: center;">
+        <h2 style="color: #ef4444; margin-bottom: 1rem;">Delete Service</h2>
+        <p style="color: #94a3b8; margin-bottom: 2rem;">
+            Are you sure you want to delete this service? This action cannot be undone.
+        </p>
+        
+        <form method="POST">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="deleteServiceId">
+            
+            <div class="form-group" style="text-align: left;">
+                <label>Enter Admin Password to Confirm</label>
+                <input type="password" name="admin_password" class="form-control" placeholder="Password" required>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn" style="flex: 1; background: #ef4444; color: white; border: none;">Delete</button>
+                <button type="button" onclick="closeDeleteModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
             </div>
         </form>
     </div>
@@ -324,12 +367,30 @@ require_once 'includes/header.php';
 
     function closeModal() {
         document.getElementById('serviceModal').style.display = 'none';
+        
+        // Also cleanup Drop Zone
+        const dropZone = document.getElementById('dropZone');
+        // If we were editing, the image might remain, but resetting next time handles it.
+    }
+
+    // Delete Modal Functions
+    function openDeleteModal(id) {
+        document.getElementById('deleteServiceId').value = id;
+        document.getElementById('deleteConfirmModal').style.display = 'block';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteConfirmModal').style.display = 'none';
     }
 
     window.onclick = function(event) {
         const modal = document.getElementById('serviceModal');
+        const deleteModal = document.getElementById('deleteConfirmModal');
         if (event.target == modal) {
             closeModal();
+        }
+        if (event.target == deleteModal) {
+            closeDeleteModal();
         }
     }
 </script>
