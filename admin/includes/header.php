@@ -33,7 +33,7 @@ if (!isset($_SESSION['user_name']) && isset($_SESSION['user_id'])) {
     <div class="admin-wrapper">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="index.php" class="logo" style="text-decoration: none;">Kallma Admin</a>
+                <a href="index.php" class="logo" style="text-decoration: none;">Kallma</a>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -49,6 +49,7 @@ if (!isset($_SESSION['user_name']) && isset($_SESSION['user_id'])) {
                     
                     <?php if (function_exists('isAdmin') && isAdmin()): ?>
                         <li><a href="users.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">Users</a></li>
+                        <li><a href="../booking.php">Book Now</a></li>
                     <?php endif; ?>
                     
                     <li><a href="../index.php">View Site</a></li>

@@ -263,24 +263,24 @@ $status_names = [
 ];
 ?>
 
-<div class="glass-card" style="margin-top: 3rem;">
+<div class="glass-card" style="margin-top: 3rem;" id="bookingsCalendar">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <h2 style="margin: 0;"><?php echo $status_names[$status_filter]; ?> Bookings - <?php echo date('F Y', strtotime($first_day)); ?></h2>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
             <!-- Status Filter Buttons -->
             <div style="display: flex; gap: 0.5rem; padding: 0.25rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                <a href="?month=<?php echo $current_month; ?>&year=<?php echo $current_year; ?>&status=completed" 
+                <button onclick="loadBookings(<?php echo $current_month; ?>, <?php echo $current_year; ?>, 'completed')" 
                     class="btn btn-small <?php echo $status_filter === 'completed' ? 'btn-primary' : 'btn-outline'; ?>" 
-                    style="padding: 0.5rem 1rem;">Completed</a>
-                <a href="?month=<?php echo $current_month; ?>&year=<?php echo $current_year; ?>&status=pending" 
+                    style="padding: 0.5rem 1rem;">Completed</button>
+                <button onclick="loadBookings(<?php echo $current_month; ?>, <?php echo $current_year; ?>, 'pending')" 
                     class="btn btn-small <?php echo $status_filter === 'pending' ? 'btn-primary' : 'btn-outline'; ?>" 
-                    style="padding: 0.5rem 1rem;">Pending</a>
+                    style="padding: 0.5rem 1rem;">Pending</button>
             </div>
             
             <!-- Month Navigation -->
-            <a href="?month=<?php echo $prev_month; ?>&year=<?php echo $prev_year; ?>&status=<?php echo $status_filter; ?>" class="btn btn-outline btn-small">← Previous</a>
+            <button onclick="loadBookings(<?php echo $prev_month; ?>, <?php echo $prev_year; ?>, '<?php echo $status_filter; ?>')" class="btn btn-outline btn-small">← Previous</button>
             <span style="color: #94a3b8; font-weight: 600; padding: 0 0.5rem;">Month</span>
-            <a href="?month=<?php echo $next_month; ?>&year=<?php echo $next_year; ?>&status=<?php echo $status_filter; ?>" class="btn btn-outline btn-small">Next →</a>
+            <button onclick="loadBookings(<?php echo $next_month; ?>, <?php echo $next_year; ?>, '<?php echo $status_filter; ?>')" class="btn btn-outline btn-small">Next →</button>
         </div>
     </div>
     
@@ -428,6 +428,37 @@ $status_names = [
 
     function closeModal() {
         document.getElementById('masseuseModal').style.display = 'none';
+    }
+
+    // AJAX function to load bookings
+    async function loadBookings(month, year, status) {
+        const container = document.getElementById('bookingsCalendar');
+        
+        // Add loading state
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+        
+        try {
+            const response = await fetch(`api_get_bookings.php?month=${month}&year=${year}&status=${status}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                container.innerHTML = data.html;
+                container.style.opacity = '1';
+                container.style.pointerEvents = 'auto';
+                
+                // Update URL without page reload
+                const newUrl = `?month=${month}&year=${year}&status=${status}`;
+                window.history.pushState({month, year, status}, '', newUrl);
+            } else {
+                throw new Error('Failed to load bookings');
+            }
+        } catch (error) {
+            console.error('Error loading bookings:', error);
+            container.style.opacity = '1';
+            container.style.pointerEvents = 'auto';
+            alert('Failed to load bookings. Please try again.');
+        }
     }
 
 

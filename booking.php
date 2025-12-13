@@ -158,7 +158,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="control-group">
                         <label><span class="step-number">3</span> Select Date</label>
                     </div>
-                    <div class="calendar-widget">
+                    <div class="calendar-widget" style="position: relative;">
+                        <!-- Calendar Loader -->
+                        <div id="calendarLoader" class="calendar-loader" style="display: none;">
+                            <div class="loader"></div>
+                            <p style="color: #94a3b8; margin-top: 1rem; font-size: 0.9rem;">Loading availability...</p>
+                        </div>
+                        
+                        <!-- No Availability Message -->
+                        <div id="noAvailabilityMessage" class="no-availability-message" style="display: none;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin-bottom: 1rem;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <h3 style="color: #f59e0b; margin-bottom: 0.5rem;">No Availability</h3>
+                            <p style="color: #94a3b8; text-align: center;" id="noAvailabilityText">
+                                My apologies, <span id="masseuseName"></span> is not available for the next 10 days.
+                            </p>
+                        </div>
+                        
+                        <!-- Select Masseuse Prompt -->
+                        <div id="selectMasseusePrompt" class="select-masseuse-prompt">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="margin-bottom: 0.75rem; opacity: 0.5;">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <p style="color: #64748b; text-align: center; font-size: 0.95rem; margin: 0;">
+                                Please select a masseuse first
+                            </p>
+                        </div>
+                        
                         <div class="calendar-header">
                             <div>
                                 <h3 class="calendar-title" id="calendarTitle">Calendar</h3>
@@ -351,17 +381,68 @@ async function loadMonthlyAvailability() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     
+    // Show loader
+    const loader = document.getElementById('calendarLoader');
+    const noAvailMsg = document.getElementById('noAvailabilityMessage');
+    if (loader) loader.style.display = 'flex';
+    if (noAvailMsg) noAvailMsg.style.display = 'none';
+    
     try {
         const response = await fetch(`api/get_monthly_availability.php?masseuse_id=${masseuseId}&year=${year}&month=${month}`);
         const data = await response.json();
         
         if (data.availability) {
             monthlyAvailability = data.availability;
+            
+            // Check if masseuse has any availability in the next 10 days
+            const hasAvailability = checkAvailabilityNext10Days();
+            
+            if (!hasAvailability) {
+                // Get masseuse name
+                const masseuseSelect = document.getElementById('masseuse_id');
+                const masseuseName = masseuseSelect.options[masseuseSelect.selectedIndex].text;
+                document.getElementById('masseuseName').textContent = masseuseName;
+                
+                // Show no availability message
+                if (noAvailMsg) noAvailMsg.style.display = 'flex';
+            } else {
+                // Hide no availability message and render calendar
+                if (noAvailMsg) noAvailMsg.style.display = 'none';
+            }
+            
             renderCalendar();
         }
     } catch (error) {
         console.error('Error loading monthly availability:', error);
+    } finally {
+        // Hide loader
+        if (loader) loader.style.display = 'none';
     }
+}
+
+// Check if masseuse has availability in the next 10 days
+function checkAvailabilityNext10Days() {
+    // If monthlyAvailability is empty, no availability
+    if (!monthlyAvailability || Object.keys(monthlyAvailability).length === 0) {
+        return false;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 10; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() + i);
+        const day = checkDate.getDate();
+        
+        // Check if this day has availability (available or partial)
+        const dayStatus = monthlyAvailability[day];
+        if (dayStatus === 'available' || dayStatus === 'partial') {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 // Load time slots for selected date
@@ -550,7 +631,15 @@ masseuseSelect.addEventListener('change', () => {
         el.classList.remove('selected');
     });
     
-    loadMonthlyAvailability();
+    // Hide the select masseuse prompt when a masseuse is selected
+    const prompt = document.getElementById('selectMasseusePrompt');
+    if (masseuseSelect.value) {
+        if (prompt) prompt.style.display = 'none';
+        loadMonthlyAvailability();
+    } else {
+        if (prompt) prompt.style.display = 'flex';
+    }
+    
     updateConfirmButton();
 });
 
@@ -581,6 +670,10 @@ document.getElementById('resetBtn').addEventListener('click', function() {
     // Hide time slots
     timeSlotsContainer.style.display = 'none';
     timeSlotsGrid.innerHTML = '';
+    
+    // Show select masseuse prompt
+    const prompt = document.getElementById('selectMasseusePrompt');
+    if (prompt) prompt.style.display = 'flex';
     
     // Re-render calendar
     currentDate = new Date();

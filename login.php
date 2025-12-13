@@ -99,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         .login-illustration {
             background: rgba(255, 255, 255, 0.98);
+            background: #f6f6ea;
             border-radius: 50% 20% 50% 20% / 20% 50% 20% 50%;
             padding: 3rem;
             max-width: 500px;

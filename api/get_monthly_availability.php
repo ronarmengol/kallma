@@ -60,44 +60,8 @@ for ($day = 1; $day <= $days_in_month; $day++) {
             }
         }
     } else {
-        // Fall back to weekly pattern
-        $sql = "SELECT start_time, end_time FROM availability 
-                WHERE masseuse_id = $masseuse_id AND day_of_week = '$day_of_week'";
-        $result = $conn->query($sql);
-        
-        if ($result->num_rows === 0) {
-            $availability[$day] = 'unavailable';
-            continue;
-        }
-        
-        $row = $result->fetch_assoc();
-        $start_time = strtotime($date . ' ' . $row['start_time']);
-        $end_time = strtotime($date . ' ' . $row['end_time']);
-        
-        // Count how many slots are available
-        $total_slots = 0;
-        $current_time = $start_time;
-        while ($current_time < $end_time) {
-            $total_slots++;
-            $current_time = strtotime('+1 hour', $current_time);
-        }
-        
-        // Count booked slots
-        $sql_bookings = "SELECT COUNT(*) as booked FROM bookings 
-                        WHERE masseuse_id = $masseuse_id 
-                        AND booking_date = '$date' 
-                        AND status != 'cancelled'";
-        $bookings_result = $conn->query($sql_bookings);
-        $booked_count = $bookings_result->fetch_assoc()['booked'];
-        
-        // Determine availability status
-        if ($booked_count >= $total_slots) {
-            $availability[$day] = 'booked';
-        } else if ($booked_count > 0) {
-            $availability[$day] = 'partial';
-        } else {
-            $availability[$day] = 'available';
-        }
+        // No daily availability set for this date - mark as unavailable
+        $availability[$day] = 'unavailable';
     }
 }
 

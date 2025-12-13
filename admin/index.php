@@ -135,4 +135,135 @@ require_once 'includes/header.php';
     </div>
 </div>
 
+<?php if (isAdmin()): ?>
+<!-- Danger Zone -->
+<div class="glass-card" style="margin-top: 3rem; border: 2px solid #dc2626; background: rgba(220, 38, 38, 0.05);">
+    <h2 style="color: #dc2626; display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Danger Zone
+    </h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+        Irreversible actions that will permanently affect your database. Use with extreme caution.
+    </p>
+    
+    <div style="padding: 1.5rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px; border-left: 4px solid #dc2626;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.1rem;">Hard Database Reset</h3>
+                <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">
+                    Delete all bookings, services, masseuses, availability, and FAQs. <strong style="color: #10b981;">User accounts will be preserved.</strong>
+                </p>
+            </div>
+            <button onclick="showResetConfirmation()" class="btn" style="background: #dc2626; border-color: #dc2626; white-space: nowrap;">
+                Reset Database
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Confirmation Modal -->
+<div id="resetModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass-card" style="max-width: 500px; margin: 2rem; border: 2px solid #dc2626;">
+        <h2 style="color: #dc2626; margin-bottom: 1rem;">⚠️ Confirm Database Reset</h2>
+        <p style="color: #fff; margin-bottom: 1rem;">
+            This will <strong>permanently delete</strong> all:
+        </p>
+        <ul style="color: #94a3b8; margin-bottom: 1rem; padding-left: 1.5rem;">
+            <li>Bookings</li>
+            <li>Services</li>
+            <li>Masseuses</li>
+            <li>Availability schedules</li>
+            <li>FAQs</li>
+        </ul>
+        <p style="color: #10b981; margin-bottom: 1.5rem;">
+            ✓ User accounts will be preserved
+        </p>
+        <p style="color: #fff; font-weight: 600; margin-bottom: 1rem;">
+            Enter your password to confirm:
+        </p>
+        <form id="resetForm" onsubmit="handleDatabaseReset(event)">
+            <input 
+                type="password" 
+                id="resetPassword" 
+                name="password" 
+                placeholder="Your password" 
+                required 
+                style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border); border-radius: 4px; color: #fff;"
+            >
+            <div id="resetError" style="color: #dc2626; margin-bottom: 1rem; display: none;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="hideResetConfirmation()" class="btn btn-outline">
+                    Cancel
+                </button>
+                <button type="submit" class="btn" style="background: #dc2626; border-color: #dc2626;">
+                    Confirm Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showResetConfirmation() {
+    document.getElementById('resetModal').style.display = 'flex';
+    document.getElementById('resetPassword').value = '';
+    document.getElementById('resetError').style.display = 'none';
+}
+
+function hideResetConfirmation() {
+    document.getElementById('resetModal').style.display = 'none';
+}
+
+async function handleDatabaseReset(event) {
+    event.preventDefault();
+    
+    const password = document.getElementById('resetPassword').value;
+    const errorDiv = document.getElementById('resetError');
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Resetting...';
+    
+    try {
+        const response = await fetch('reset_database.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'password=' + encodeURIComponent(password)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✓ Database reset successfully!\n\nAll data except users has been deleted.');
+            hideResetConfirmation();
+            location.reload();
+        } else {
+            errorDiv.textContent = data.message || 'Reset failed';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Network error: ' + error.message;
+        errorDiv.style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm Reset';
+    }
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideResetConfirmation();
+    }
+});
+</script>
+<?php endif; ?>
+
 <?php require_once 'includes/footer.php'; ?>

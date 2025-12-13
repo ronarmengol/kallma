@@ -83,7 +83,9 @@ if (isset($_SESSION['user_id']) && !isset($_SESSION['user_name']) && isset($conn
           <?php /* functions already required above */ ?>
           <?php if (isLoggedIn()): ?>
             <li class="user-greeting">Hi, <?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : 'Guest'; ?></li>
-            <li><a href="booking.php">Book Now</a></li>
+            <?php if ($_SESSION['role'] !== 'admin'): ?>
+              <li><a href="booking.php">Book Now</a></li>
+            <?php endif; ?>
             <?php if ($_SESSION['role'] === 'admin'): ?>
               <li><a href="admin/index.php">Admin</a></li>
             <?php endif; ?>

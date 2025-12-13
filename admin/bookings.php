@@ -155,7 +155,13 @@ require_once 'includes/header.php';
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1>Manage Bookings</h1>
-    <a href="bookings_history.php" class="btn btn-outline">📜 History</a>
+    <a href="bookings_history.php" class="btn btn-outline" style="display: flex; align-items: center; gap: 0.5rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        History
+    </a>
 </div>
 
 <?php if ($message): ?>
