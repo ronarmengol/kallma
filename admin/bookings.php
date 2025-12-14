@@ -153,16 +153,11 @@ $pageTitle = 'Manage Bookings - Kallma Spa';
 require_once 'includes/header.php';
 ?>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+
+<div style="margin-bottom: 2rem;">
     <h1>Manage Bookings</h1>
-    <a href="bookings_history.php" class="btn btn-outline" style="display: flex; align-items: center; gap: 0.5rem;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        History
-    </a>
 </div>
+
 
 <?php if ($message): ?>
     <div style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 1rem; border-radius: 8px; margin: 2rem 0;">
@@ -170,11 +165,6 @@ require_once 'includes/header.php';
     </div>
 <?php endif; ?>
 
-<div style="margin-bottom: 1rem;">
-    <p style="color: #94a3b8; font-size: 0.95rem; margin: 0;">
-        <strong style="color: #e2e8f0;">Today:</strong> <?php echo date('l, F j, Y'); ?>
-    </p>
-</div>
 
 <div class="glass-card">
     <div style="overflow-x: auto;">

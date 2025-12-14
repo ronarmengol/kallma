@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Africa/Lusaka
+date_default_timezone_set('Africa/Lusaka');
+
 $servername = "localhost";
 $username = "root";
 $password = "12345"; // Default XAMPP password is empty
