@@ -6,6 +6,39 @@ if (!isLoggedIn()) {
     redirect('login.php');
 }
 
+// Custom navigation for non-customer users
+if (isAdmin() || isMasseuse()) {
+    echo '<style>
+        header nav .logo { display: none; }
+        header nav .nav-links { display: none; }
+        header nav::before {
+            content: "";
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>';
+    echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const nav = document.querySelector("header nav");
+            if (nav) {
+                const backBtn = document.createElement("a");
+                backBtn.href = "admin/bookings.php";
+                backBtn.className = "logo";
+                backBtn.style.cssText = "display: flex; align-items: center; gap: 0.5rem; text-decoration: none;";
+                backBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Bookings</span>
+                `;
+                nav.insertBefore(backBtn, nav.firstChild);
+            }
+        });
+    </script>';
+}
+
 $services = getServices($conn);
 $masseuses = getMasseuses($conn);
 

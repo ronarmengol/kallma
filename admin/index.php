@@ -22,7 +22,7 @@ if (isMasseuse()) {
 if (isAdmin()) {
     // Pending bookings stats
     $pending_today = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status = 'pending' AND booking_date = CURDATE()")->fetch_assoc()['count'];
-    $pending_week = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status = 'pending' AND YEARWEEK(booking_date, 1) = YEARWEEK(CURDATE(), 1)")->fetch_assoc()['count'];
+    $pending_total = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE status = 'pending'")->fetch_assoc()['count'];
     
     $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
     $total_masseuses = $conn->query("SELECT COUNT(*) as count FROM masseuses")->fetch_assoc()['count'];
@@ -30,7 +30,7 @@ if (isAdmin()) {
 } else {
     // Masseuse sees only their own bookings
     $pending_today = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id AND status = 'pending' AND booking_date = CURDATE()")->fetch_assoc()['count'];
-    $pending_week = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id AND status = 'pending' AND YEARWEEK(booking_date, 1) = YEARWEEK(CURDATE(), 1)")->fetch_assoc()['count'];
+    $pending_total = $conn->query("SELECT COUNT(*) as count FROM bookings WHERE masseuse_id = $logged_in_masseuse_id AND status = 'pending'")->fetch_assoc()['count'];
 
     $total_services = $conn->query("SELECT COUNT(*) as count FROM services")->fetch_assoc()['count'];
     $total_masseuses = 1; // Only themselves
@@ -73,8 +73,8 @@ require_once 'includes/header.php';
                 <div class="stat-number" style="color: #f59e0b; font-size: 2rem; line-height: 1;"><?php echo $pending_today; ?></div>
             </div>
             <div style="text-align: right;">
-                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">This Week</div>
-                <div class="stat-number" style="color: #fbbf24; font-size: 2rem; line-height: 1;"><?php echo $pending_week; ?></div>
+                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Pending</div>
+                <div class="stat-number" style="color: #fbbf24; font-size: 2rem; line-height: 1;"><?php echo $pending_total; ?></div>
             </div>
         </div>
     </div>
@@ -724,7 +724,10 @@ function renderPeakHours(heatmap) {
                 y: {
                     beginAtZero: true,
                     grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    ticks: { color: '#94a3b8' }
+                    ticks: { 
+                        color: '#94a3b8',
+                        stepSize: 1
+                    }
                 },
                 x: {
                     grid: { display: false },
@@ -1252,7 +1255,7 @@ function renderCustomerPreferences(preferences) {
     // Time Slots
     if (preferences.time_slots && preferences.time_slots.length > 0) {
         html += '<div>';
-        html += '<h3 style="margin-bottom: 1rem; color: #f59e0b;">⏰ Most Popular Times</h3>';
+        html += '<h3 style="margin-bottom: 1rem; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Most Popular Times</h3>';
         preferences.time_slots.forEach((slot, index) => {
             html += '<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(245, 158, 11, 0.1); border-radius: 6px;">';
             html += '<div style="display: flex; justify-content: space-between; align-items: center;">';
@@ -1266,7 +1269,7 @@ function renderCustomerPreferences(preferences) {
     // Days
     if (preferences.days && preferences.days.length > 0) {
         html += '<div>';
-        html += '<h3 style="margin-bottom: 1rem; color: #8b5cf6;">📅 Most Popular Days</h3>';
+        html += '<h3 style="margin-bottom: 1rem; color: #8b5cf6; display: flex; align-items: center; gap: 0.5rem;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Most Popular Days</h3>';
         const maxDayBookings = Math.max(...preferences.days.map(d => d.bookings));
         preferences.days.forEach(day => {
             const percentage = (day.bookings / maxDayBookings) * 100;
@@ -1296,10 +1299,10 @@ document.addEventListener('DOMContentLoaded', loadAnalytics);
 <!-- Danger Zone -->
 <div class="glass-card" style="margin-top: 3rem; border: 2px solid #dc2626; background: rgba(220, 38, 38, 0.05); text-align: left;">
     <h2 style="color: #dc2626; display: flex; align-items: center; gap: 0.5rem; justify-content: flex-start;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
         Danger Zone
     </h2>
