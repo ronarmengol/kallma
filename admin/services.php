@@ -132,14 +132,22 @@ require_once 'includes/header.php';
                     <td>K<?php echo number_format($service['price'], 2); ?></td>
                     <td><?php echo $service['duration_minutes']; ?> mins</td>
                     <td style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button onclick='openEditModal(<?php echo json_encode($service); ?>)' class="icon-btn" title="Edit">
-                            ✎
+                        <button onclick='openEditModal(<?php echo json_encode($service); ?>)' class="icon-btn" title="Edit" style="color: var(--primary-color);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
                         </button>
                         <form method="POST" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this service?');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
-                            <button type="submit" class="icon-btn delete" title="Delete">
-                                🗑️
+                            <button type="submit" class="icon-btn delete" title="Delete" style="color: #ef4444;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
                             </button>
                         </form>
                     </td>
