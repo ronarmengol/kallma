@@ -52,10 +52,10 @@ for ($day = 1; $day <= $days_in_month; $day++) {
             $booked_count = $bookings_result->fetch_assoc()['booked'];
             
             if ($booked_count >= $total_slots) {
-                $availability[$day] = 'booked';
-            } else if ($booked_count > 0) {
+                // All slots are booked - show as booked (orange/partial styling)
                 $availability[$day] = 'partial';
             } else {
+                // At least one slot is available - show as available (green)
                 $availability[$day] = 'available';
             }
         }

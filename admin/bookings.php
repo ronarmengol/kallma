@@ -181,13 +181,11 @@ require_once 'includes/header.php';
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th>REF</th>
                 <th><?php echo renderSortHeader('Customer', 'customer_name', $sort, $order); ?></th>
                 <th>Service</th>
                 <th><?php echo renderSortHeader('Masseuse', 'masseuse_name', $sort, $order); ?></th>
                 <th><?php echo renderSortHeader('Date', 'booking_date', $sort, $order); ?></th>
-                <th>Time</th>
-
                 <th><?php echo renderSortHeader('Status', 'status', $sort, $order); ?></th>
                 <th>Actions</th>
             </tr>
@@ -195,7 +193,7 @@ require_once 'includes/header.php';
         <tbody>
             <?php if (empty($bookings)): ?>
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">
+                    <td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">
                         No active bookings found.
                     </td>
                 </tr>
@@ -204,14 +202,26 @@ require_once 'includes/header.php';
                     <tr>
                         <td><?php echo str_pad($booking['id'], 4, '0', STR_PAD_LEFT); ?></td>
                         <td>
-                            <?php echo htmlspecialchars($booking['customer_name'] ?? 'Guest'); ?><br>
-                            <small style="color: #64748b;"><?php echo $booking['customer_mobile'] ? htmlspecialchars(str_replace(' ', '', trim($booking['customer_mobile']))) : ''; ?></small>
+                            <?php 
+                            // Check if this is a walk-in client booking
+                            if (!empty($booking['walk_in_client_name'])) {
+                                // Show walk-in client name with staff member below
+                                echo htmlspecialchars($booking['walk_in_client_name']);
+                                echo '<br><small style="color: #64748b;">via ' . htmlspecialchars($booking['customer_name'] ?? 'Staff') . '</small>';
+                                echo '<br><small style="color: #64748b;">' . htmlspecialchars($booking['walk_in_client_mobile'] ?? '') . '</small>';
+                            } else {
+                                // Regular customer booking
+                                echo htmlspecialchars($booking['customer_name'] ?? 'Guest');
+                                echo '<br><small style="color: #64748b;">' . ($booking['customer_mobile'] ? htmlspecialchars(str_replace(' ', '', trim($booking['customer_mobile']))) : '') . '</small>';
+                            }
+                            ?>
                         </td>
                         <td><?php echo htmlspecialchars($booking['service_name']); ?></td>
                         <td><?php echo htmlspecialchars($booking['masseuse_name']); ?></td>
-                        <td><?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></td>
-                        <td><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></td>
-
+                        <td>
+                            <?php echo date('M d, Y', strtotime($booking['booking_date'])); ?>
+                            <br><small style="color: #64748b;"><?php echo date('g:i A', strtotime($booking['booking_time'])); ?></small>
+                        </td>
                         <td><span class="badge badge-<?php echo $booking['status']; ?>"><?php echo ucfirst($booking['status']); ?></span></td>
                         <td>
                             <div style="display: flex; gap: 0.5rem; align-items: center;">

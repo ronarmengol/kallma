@@ -457,6 +457,13 @@ require_once 'includes/header.php';
         
         try {
             const response = await fetch(`../api/get_daily_availability.php?masseuse_id=${masseuseId}&start_date=${startDate}&end_date=${endDate}`);
+            
+            // Check if session expired (redirect to login)
+            if (response.redirected && response.url.includes('login.php')) {
+                window.location.href = '../login.php?timeout=1';
+                return;
+            }
+            
             const data = await response.json();
             availabilityData = data.availability || {};
             renderDays();
@@ -688,6 +695,12 @@ require_once 'includes/header.php';
                     time_slots: timeSlots
                 })
             });
+            
+            // Check if session expired (redirect to login)
+            if (response.redirected && response.url.includes('login.php')) {
+                window.location.href = '../login.php?timeout=1';
+                return;
+            }
             
             const data = await response.json();
             

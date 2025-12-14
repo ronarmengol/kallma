@@ -43,7 +43,7 @@ if (isLoggedIn() && isset($_SESSION['user_id']) && $_SESSION['role'] === 'custom
             JOIN masseuses m ON b.masseuse_id = m.id
             WHERE b.user_id = ? 
             AND b.status IN ('pending', 'confirmed')
-            AND (b.booking_date > CURDATE() OR (b.booking_date = CURDATE() AND b.booking_time >= CURTIME()))
+            AND b.booking_date >= CURDATE()
             ORDER BY b.booking_date ASC, b.booking_time ASC
             LIMIT 5";
     
@@ -105,7 +105,12 @@ if (isLoggedIn() && isset($_SESSION['user_id']) && $_SESSION['role'] === 'custom
               </td>
               <td>
                 <button type="button" class="icon-btn delete" title="Cancel Booking" onclick="openCancelModal(<?php echo $booking['id']; ?>, '<?php echo htmlspecialchars($booking['service_name'], ENT_QUOTES); ?>')">
-                  🗑️
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
                 </button>
               </td>
             </tr>

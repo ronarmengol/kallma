@@ -85,7 +85,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Create new booking
         $user_id = $_SESSION['user_id'];
-        $sql = "INSERT INTO bookings (user_id, service_id, masseuse_id, booking_date, booking_time) VALUES ($user_id, $service_id, $masseuse_id, '$date', '$time')";
+        
+        // Get walk-in client data if provided (for admin/masseuse)
+        $walk_in_name = isset($_POST['walk_in_name']) ? sanitize($conn, $_POST['walk_in_name']) : null;
+        $walk_in_mobile = isset($_POST['walk_in_mobile']) ? sanitize($conn, $_POST['walk_in_mobile']) : null;
+        
+        if ($walk_in_name && $walk_in_mobile) {
+            $sql = "INSERT INTO bookings (user_id, service_id, masseuse_id, booking_date, booking_time, walk_in_client_name, walk_in_client_mobile) 
+                    VALUES ($user_id, $service_id, $masseuse_id, '$date', '$time', '$walk_in_name', '$walk_in_mobile')";
+        } else {
+            $sql = "INSERT INTO bookings (user_id, service_id, masseuse_id, booking_date, booking_time) 
+                    VALUES ($user_id, $service_id, $masseuse_id, '$date', '$time')";
+        }
         
         if ($conn->query($sql)) {
             $message = "Booking confirmed successfully!";
@@ -148,6 +159,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <input type="hidden" name="date" id="selectedDate">
                     <input type="hidden" name="time" id="selectedTime">
+                    <?php if (isAdmin() || isMasseuse()): ?>
+                    <input type="hidden" name="walk_in_name" id="walkInNameHidden">
+                    <input type="hidden" name="walk_in_mobile" id="walkInMobileHidden">
+                    <?php endif; ?>
                     <?php if ($is_editing): ?>
                         <input type="hidden" name="edit_booking_id" value="<?php echo $edit_id; ?>">
                     <?php endif; ?>
@@ -202,6 +217,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="calendar-grid" id="calendarGrid">
                             <!-- Calendar will be populated here -->
                         </div>
+                        
+                        <!-- Calendar Legend -->
+                        <div class="calendar-legend" style="margin-top: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 24px; height: 24px; border: 2px solid #06b6d4; border-radius: 6px; background: rgba(6, 182, 212, 0.15); box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);"></div>
+                                    <span style="color: #94a3b8; font-size: 0.85rem;">Today</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 24px; height: 24px; border: 1px solid rgba(16, 185, 129, 0.8); border-radius: 6px; background: rgba(16, 185, 129, 0.2); box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);"></div>
+                                    <span style="color: #94a3b8; font-size: 0.85rem;">Available</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 24px; height: 24px; border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 6px; background: rgba(245, 158, 11, 0.15); box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);"></div>
+                                    <span style="color: #94a3b8; font-size: 0.85rem;">Fully Booked</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 24px; height: 24px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; background: rgba(255, 255, 255, 0.02); color: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">—</div>
+                                    <span style="color: #94a3b8; font-size: 0.85rem;">Unavailable</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -227,6 +264,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="popover-content confirmation-popover">
                 <h3>Confirm Your Booking</h3>
                 <div class="booking-summary">
+                    <?php if (isAdmin() || isMasseuse()): ?>
+                    <div class="summary-item" id="confirmClientNameItem" style="display: none;">
+                        <span class="summary-label">Client Name:</span>
+                        <span class="summary-value" id="confirmClientName"></span>
+                    </div>
+                    <div class="summary-item" id="confirmClientMobileItem" style="display: none;">
+                        <span class="summary-label">Client Mobile:</span>
+                        <span class="summary-value" id="confirmClientMobile"></span>
+                    </div>
+                    <?php endif; ?>
                     <div class="summary-item">
                         <span class="summary-label">Service:</span>
                         <span class="summary-value" id="confirmService"></span>
@@ -250,6 +297,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
         </div>
+
+        <?php if (isAdmin() || isMasseuse()): ?>
+        <!-- Walk-in Client Dialog -->
+        <div id="walkInDialog" class="validation-popover" style="display: none;">
+            <div class="popover-content walk-in-dialog">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin-bottom: 1rem;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <h3 style="color: #10b981; margin-bottom: 0.5rem;">Walk-in Client</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">Please enter client details for reference</p>
+                </div>
+                
+                <form id="walkInForm" onsubmit="handleWalkInSubmit(event)">
+                    <div class="form-group">
+                        <label style="color: #cbd5e1; margin-bottom: 0.5rem; display: block;">Client Name *</label>
+                        <input 
+                            type="text" 
+                            id="walkInName" 
+                            name="walk_in_name"
+                            placeholder="Enter client name" 
+                            required 
+                            style="width: 100%; padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #fff; font-size: 1rem;"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label style="color: #cbd5e1; margin-bottom: 0.5rem; display: block;">Mobile Number *</label>
+                        <input 
+                            type="tel" 
+                            id="walkInMobile" 
+                            name="walk_in_mobile"
+                            placeholder="Enter mobile number" 
+                            required 
+                            pattern="[0-9\s\-\(\)\+]{10,20}"
+                            title="Please enter a valid phone number (10-20 characters, can include spaces, dashes, parentheses)"
+                            style="width: 100%; padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #fff; font-size: 1rem;"
+                        >
+                        <small style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem; display: block;">For reference purposes only</small>
+                    </div>
+                    
+                    <div class="confirmation-actions" style="margin-top: 1.5rem;">
+                        <button type="submit" class="btn-primary" style="flex: 1;">Continue to Booking</button>
+                        <button type="button" class="btn-cancel" onclick="closeWalkInDialog()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
 
     </div>
 </div>
@@ -389,6 +486,13 @@ async function loadMonthlyAvailability() {
     
     try {
         const response = await fetch(`api/get_monthly_availability.php?masseuse_id=${masseuseId}&year=${year}&month=${month}`);
+        
+        // Check if session expired (redirect to login)
+        if (response.redirected && response.url.includes('login.php')) {
+            window.location.href = 'login.php?timeout=1';
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.availability) {
@@ -460,6 +564,13 @@ async function loadTimeSlots() {
     
     try {
         const response = await fetch(`api/get_availability.php?masseuse_id=${masseuseId}&date=${date}`);
+        
+        // Check if session expired (redirect to login)
+        if (response.redirected && response.url.includes('login.php')) {
+            window.location.href = 'login.php?timeout=1';
+            return;
+        }
+        
         const data = await response.json();
         
         // Hide loader
@@ -580,6 +691,16 @@ function showConfirmationPopover() {
     document.getElementById('confirmDate').textContent = formattedDate;
     document.getElementById('confirmTime').textContent = time;
     
+    <?php if (isAdmin() || isMasseuse()): ?>
+    // Populate walk-in client details if available
+    if (walkInClientData) {
+        document.getElementById('confirmClientName').textContent = walkInClientData.name;
+        document.getElementById('confirmClientMobile').textContent = walkInClientData.mobile;
+        document.getElementById('confirmClientNameItem').style.display = 'flex';
+        document.getElementById('confirmClientMobileItem').style.display = 'flex';
+    }
+    <?php endif; ?>
+    
     // Show popover
     document.getElementById('confirmationPopover').style.display = 'flex';
 }
@@ -591,8 +712,47 @@ function closeConfirmationPopover() {
 
 // Submit booking
 function submitBooking() {
+    <?php if (isAdmin() || isMasseuse()): ?>
+    // Populate hidden fields with walk-in client data
+    if (walkInClientData) {
+        document.getElementById('walkInNameHidden').value = walkInClientData.name;
+        document.getElementById('walkInMobileHidden').value = walkInClientData.mobile;
+    }
+    <?php endif; ?>
+    
     document.getElementById('bookingForm').submit();
 }
+
+<?php if (isAdmin() || isMasseuse()): ?>
+// Walk-in client dialog functions
+let walkInClientData = null;
+
+function showWalkInDialog() {
+    document.getElementById('walkInDialog').style.display = 'flex';
+    document.getElementById('walkInName').value = '';
+    document.getElementById('walkInMobile').value = '';
+}
+
+function closeWalkInDialog() {
+    document.getElementById('walkInDialog').style.display = 'none';
+}
+
+function handleWalkInSubmit(event) {
+    event.preventDefault();
+    
+    // Store walk-in client data
+    walkInClientData = {
+        name: document.getElementById('walkInName').value,
+        mobile: document.getElementById('walkInMobile').value
+    };
+    
+    // Close walk-in dialog
+    closeWalkInDialog();
+    
+    // Show confirmation popover
+    showConfirmationPopover();
+}
+<?php endif; ?>
 
 // Handle confirm button click
 confirmBtn.addEventListener('click', function(e) {
@@ -600,9 +760,14 @@ confirmBtn.addEventListener('click', function(e) {
         e.preventDefault();
         showValidationPopover();
     } else {
-        // Show confirmation popover
         e.preventDefault();
+        <?php if (isAdmin() || isMasseuse()): ?>
+        // For admin/masseuse, show walk-in dialog first
+        showWalkInDialog();
+        <?php else: ?>
+        // For customers, show confirmation directly
         showConfirmationPopover();
+        <?php endif; ?>
     }
 });
 
@@ -823,6 +988,13 @@ setInterval(updateCurrentTime, 1000);
         
         try {
             const response = await fetch(`api/get_availability.php?masseuse_id=${masseuseId}&date=${date}&exclude_booking_id=${excludeId}`);
+            
+            // Check if session expired (redirect to login)
+            if (response.redirected && response.url.includes('login.php')) {
+                window.location.href = 'login.php?timeout=1';
+                return;
+            }
+            
             const data = await response.json();
             
             // Hide loader

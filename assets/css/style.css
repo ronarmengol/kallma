@@ -565,9 +565,9 @@ footer {
 
 .calendar-day.available {
     color: #10b981;
-    border-color: rgba(16, 185, 129, 0.5);
-    background: rgba(16, 185, 129, 0.15);
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.8);
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
     font-weight: 600;
 }
 
@@ -599,8 +599,8 @@ footer {
 }
 
 .calendar-day.today {
-    border: 2px solid #f59e0b;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    border: 2px solid #06b6d4;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.6);
 }
 
 /* Calendar Loader */
